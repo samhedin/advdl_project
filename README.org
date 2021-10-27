@@ -1,5 +1,4 @@
 #+TITLE: Readme
-https://arxiv.org/pdf/2011.00844.pdf
 
 * TODO
 - [ ] Use MNIST
