@@ -1,5 +1,7 @@
-#+TITLE: Readme
+#+TITLE: Final Project - DD2412 Advanced Deep Learning
 
+In this project, we are going to reproduce some part of the results from the paper [Improved Autoregressive Modeling with Distribution Smoothing](https://arxiv.org/abs/2103.15089) by Meng et al., ICLR 2021.
+ 
 * TODO
 - [ ] Use MNIST
 - [ ] Make function to convolve an image from MNIST with gaussian noise
