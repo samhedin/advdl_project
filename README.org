@@ -1,0 +1,7 @@
+#+TITLE: Readme
+https://arxiv.org/pdf/2011.00844.pdf
+
+* TODO
+- [ ] Use MNIST
+- [ ] Make function to convolve an image from MNIST with gaussian noise
+- [ ] Read about PixelCNN++. Can we use pre-trained weights?
