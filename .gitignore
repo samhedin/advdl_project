@@ -11,3 +11,4 @@ __pycache__
 # Data
 data/*
 !data/README.md
+/src/data/
