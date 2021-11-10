@@ -1,0 +1,13 @@
+# MacOS
+.DS_Store
+
+# Python compiled
+*.pyc
+__pycache__
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Data
+data/*
+!data/README.md
