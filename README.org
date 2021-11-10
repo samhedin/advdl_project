@@ -4,3 +4,4 @@
 - [ ] Use MNIST
 - [ ] Make function to convolve an image from MNIST with gaussian noise
 - [ ] Read about PixelCNN++. Can we use pre-trained weights?
+- [ ] Can we try this type of convonlution instead? https://scipy-lectures.org/intro/scipy/auto_examples/solutions/plot_image_blur.html
