@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import argparse
 import torch
-import src.model as model
+import src.model as pixelcnn
 
 torch.manual_seed(42)
 import matplotlib.pyplot as plt
@@ -88,7 +88,7 @@ def parser():
                         default=2, help='How many epochs to run in total?')
     parser.add_argument('-s', '--seed', type=int, default=1,
                         help='Random seed to use')
-    parser.add_argument('-c', '--cuda', type=bool, default=False,
+    parser.add_argument('-c', '--cuda', type=bool, default=True,
                             help='Use CUDA?')
     return parser.parse_args()
 
@@ -96,5 +96,6 @@ if __name__ == "__main__":
     config = Config()
     train_loader, test_loader = build_dataset(config)
     args = parser()
-    network = model.pixelcnn_model()
-    model.train(network, args, train_loader, test_loader)
+    cnn_train = pixelcnn.Cnn_train(args, train_loader, test_loader)
+
+    cnn_train.train()
