@@ -2,11 +2,13 @@
 
 In this project, we are going to reproduce some part of the results from the paper [[Improved Autoregressive Modeling with Distribution Smoothing][https://arxiv.org/abs/2103.15089]] by Meng et al., ICLR 2021.
 
-* Notes
-- [ ] Use MNIST
-- [ ] Make function to convolve an image from MNIST with gaussian noise
+* TODO
+- [X] Use MNIST, ACTUALLY USE CIFAR10
+- [X] Make function to convolve an image with gaussian noise
+  - [X] Can we try this type of convonlution instead? https://scipy-lectures.org/intro/scipy/auto_examples/solutions/plot_image_blur.html
+
+* Random thoughts
 - [ ] Read about PixelCNN++. Can we use pre-trained weights?
-- [ ] Can we try this type of convonlution instead? https://scipy-lectures.org/intro/scipy/auto_examples/solutions/plot_image_blur.html
 - [ ] The amount of noise that the paper uses seems insanely high, as seen in =Autoregressive-Modeling-with-Distribution-Smoothing/configs/pixelcnnpp_conditioned_train_cifar10.yml=.
   - The images we generate with that amount of noise do not look like the presented images.
 
