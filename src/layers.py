@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from utils import *
+from src.utils import *
 import pdb
 import torch
 import torch.nn as nn

@@ -2,10 +2,13 @@ from dataclasses import dataclass
 
 import torch
 
+from src.model import PixelCNN
+
 torch.manual_seed(42)
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
+import src.utils as utils
 
 matplotlib.use("TkAgg")
 from scipy.ndimage import gaussian_filter
@@ -42,10 +45,13 @@ def smooth(image, noise=0.1, proper_convolution=False):
         return gaussian_filter(image, sigma=1.2)
 
 
-def main():
-    config = Config()
-    train_loader, test_loader = build_dataset(config)
+def pixelcnn_model():
+    pixelcnnpp_pretrained = "pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth"
+    model = PixelCNN(nr_resnet=5, nr_filters=160)
+    utils.load_part_of_model(model, pixelcnnpp_pretrained)
+    return model
 
+def show_image(train_loader):
     # show an image
     for images, labels in train_loader:
         img = images[0]
@@ -60,4 +66,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    config = Config()
+    train_loader, test_loader = build_dataset(config)
+    model = pixelcnn_model()

@@ -254,14 +254,17 @@ def right_shift(x, pad=None):
 
 
 def load_part_of_model(model, path):
-    params = torch.load(path)
+    params = torch.load(path, map_location=torch.device('cpu'))
     added = 0
+    print(model.state_dict().keys())
     for name, param in params.items():
+        name = name[7:]
         if name in model.state_dict().keys():
             try :
                 model.state_dict()[name].copy_(param)
                 added += 1
             except Exception as e:
-                print e
+                print(e)
                 pass
+    # print(added)
     print('added %s of params:' % (added / float(len(model.state_dict().keys()))))
