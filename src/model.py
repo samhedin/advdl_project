@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+import src.utils as utils
+import os
+
+from torchvision.utils import save_image
+from tensorboardX import SummaryWriter
+import time
+from torch.optim import lr_scheduler
+import torch.optim as optim
 import pdb
 import torch
 import torch.nn as nn
@@ -8,6 +16,93 @@ from src.layers import *
 from src.utils import *
 import numpy as np
 
+def pixelcnn_model():
+    pixelcnnpp_pretrained = "pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth"
+    model = PixelCNN(nr_resnet=5, nr_filters=160)
+    utils.load_part_of_model(model, pixelcnnpp_pretrained)
+    return model
+
+def train(model, args, train_loader, test_loader):
+    rescaling_inv = lambda x : .5 * x  + .5
+    obs = (3, 32, 32)
+    model_name = 'pcnn_lr:{:.5f}_nr-resnet{}_nr-filters{}'.format(args.lr, args.nr_resnet, args.nr_filters)
+    writer = SummaryWriter(log_dir=os.path.join('runs', model_name))
+    loss_op   = lambda real, fake : discretized_mix_logistic_loss(real, fake)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=1, gamma=args.lr_decay)
+
+    print('starting training')
+    writes = 0
+    for epoch in range(args.max_epochs):
+        model.train(True)
+        if args.cuda:
+            torch.cuda.synchronize()
+        train_loss = 0.
+        time_ = time.time()
+        model.train()
+        for batch_idx, (x,_) in enumerate(train_loader):
+            if args.cuda:
+                x = x.cuda(non_blocking=True)
+            x = Variable(x)
+            output = model(x)
+            loss = loss_op(x, output)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            train_loss += loss.data[0]
+            if (batch_idx +1) % args.print_every == 0 :
+                deno = args.print_every * args.batch_size * np.prod(obs) * np.log(2.)
+                writer.add_scalar('train/bpd', (train_loss / deno), writes)
+                print('loss : {:.4f}, time : {:.4f}'.format(
+                    (train_loss / deno),
+                    (time.time() - time_)))
+                train_loss = 0.
+                writes += 1
+                time_ = time.time()
+
+
+        # decrease learning rate
+        scheduler.step()
+
+        if args.cuda:
+            torch.cuda.synchronize()
+        model.eval()
+        test_loss = 0.
+        for batch_idx, (x,_) in enumerate(test_loader):
+            if args.cuda:
+                x = x.cuda(non_blocking=True)
+            input_var = Variable(x)
+            output = model(input_var)
+            loss = loss_op(input_var, output)
+            test_loss += loss.data[0]
+            del loss, output
+
+            deno = batch_idx * args.batch_size * np.prod(obs) * np.log(2.)
+            writer.add_scalar('test/bpd', (test_loss / deno), writes)
+            print('test loss : %s' % (test_loss / deno))
+
+        if (epoch + 1) % args.save_interval == 0:
+            torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))
+            print('sampling...')
+            sample_t = sample(model, obs, args)
+            sample_t = rescaling_inv(sample_t)
+            save_image(sample_t,'images/{}_{}.png'.format(model_name, epoch),
+                    nrow=5, padding=0)
+
+def sample(model, obs, args):
+    sample_op = lambda x : sample_from_discretized_mix_logistic_1d(x, args.nr_logistic_mix)
+    sample_batch_size = 25
+    model.train(False)
+    data = torch.zeros(sample_batch_size, obs[0], obs[1], obs[2])
+    if args.cuda:
+        data = data.cuda()
+    for i in range(obs[1]):
+        for j in range(obs[2]):
+            data_v = Variable(data, volatile=True)
+            out   = model(data_v, sample=True)
+            out_sample = sample_op(out)
+            data[:, :, i, j] = out_sample.data[:, :, i, j]
+    return data
 
 class PixelCNNLayer_up(nn.Module):
     def __init__(self, nr_resnet, nr_filters, resnet_nonlinearity):
@@ -230,24 +325,24 @@ class PixelCNN(nn.Module):
         return x_out
 
 
-if __name__ == "__main__":
-    """testing loss with tf version"""
-    np.random.seed(1)
-    xx_t = (np.random.rand(15, 32, 32, 100) * 3).astype("float32")
-    yy_t = np.random.uniform(-1, 1, size=(15, 32, 32, 3)).astype("float32")
-    x_t = Variable(torch.from_numpy(xx_t)).cuda()
-    y_t = Variable(torch.from_numpy(yy_t)).cuda()
-    loss = discretized_mix_logistic_loss(y_t, x_t)
+# if __name__ == "__main__":
+#     """testing loss with tf version"""
+#     np.random.seed(1)
+# xx_t = (np.random.rand(15, 32, 32, 100) * 3).astype("float32")
+#     yy_t = np.random.uniform(-1, 1, size=(15, 32, 32, 3)).astype("float32")
+#     x_t = Variable(torch.from_numpy(xx_t)).cuda()
+#     y_t = Variable(torch.from_numpy(yy_t)).cuda()
+#     loss = discretized_mix_logistic_loss(y_t, x_t)
 
-    """ testing model and deconv dimensions """
-    x = torch.cuda.FloatTensor(32, 3, 32, 32).uniform_(-1.0, 1.0)
-    xv = Variable(x).cpu()
-    ds = down_shifted_deconv2d(3, 40, stride=(2, 2))
-    x_v = Variable(x)
+#     """ testing model and deconv dimensions """
+#     x = torch.cuda.FloatTensor(32, 3, 32, 32).uniform_(-1.0, 1.0)
+#     xv = Variable(x).cpu()
+#     ds = down_shifted_deconv2d(3, 40, stride=(2, 2))
+#     x_v = Variable(x)
 
-    """ testing loss compatibility """
-    model = PixelCNN(nr_resnet=3, nr_filters=100, input_channels=x.size(1))
-    model = model.cuda()
-    out = model(x_v)
-    loss = discretized_mix_logistic_loss(x_v, out)
-    print("loss : %s" % loss.data[0])
+#     """ testing loss compatibility """
+#     model = PixelCNN(nr_resnet=3, nr_filters=100, input_channels=x.size(1))
+#     model = model.cuda()
+#     out = model(x_v)
+#     loss = discretized_mix_logistic_loss(x_v, out)
+#     print("loss : %s" % loss.data[0])

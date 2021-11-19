@@ -2,8 +2,7 @@ from dataclasses import dataclass
 
 import argparse
 import torch
-
-from src.model import PixelCNN
+import src.model as model
 
 torch.manual_seed(42)
 import matplotlib.pyplot as plt
@@ -44,13 +43,6 @@ def smooth(image, noise=0.1, proper_convolution=False):
         # https://scipy-lectures.org/intro/scipy/auto_examples/solutions/plot_image_blur.html
         # or: https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html
         return gaussian_filter(image, sigma=1.2)
-
-
-def pixelcnn_model():
-    pixelcnnpp_pretrained = "pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth"
-    model = PixelCNN(nr_resnet=5, nr_filters=160)
-    utils.load_part_of_model(model, pixelcnnpp_pretrained)
-    return model
 
 def show_image(train_loader):
     # show an image
@@ -93,12 +85,16 @@ def parser():
     parser.add_argument('-b', '--batch_size', type=int, default=64,
                         help='Batch size during training per GPU')
     parser.add_argument('-x', '--max_epochs', type=int,
-                        default=5000, help='How many epochs to run in total?')
+                        default=2, help='How many epochs to run in total?')
     parser.add_argument('-s', '--seed', type=int, default=1,
                         help='Random seed to use')
+    parser.add_argument('-c', '--cuda', type=bool, default=False,
+                            help='Use CUDA?')
     return parser.parse_args()
 
 if __name__ == "__main__":
     config = Config()
     train_loader, test_loader = build_dataset(config)
-    model = pixelcnn_model()
+    args = parser()
+    network = model.pixelcnn_model()
+    model.train(network, args, train_loader, test_loader)
