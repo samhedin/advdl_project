@@ -12,3 +12,4 @@ __pycache__
 data/*
 !data/README.md
 /src/data/
+/pixel-cnn-pp_pretrained/*
