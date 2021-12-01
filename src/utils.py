@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import pdb
+import argparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -48,11 +49,11 @@ def discretized_mix_logistic_loss(x, l, args):
     # log_scales = torch.max(l[:, :, :, :, nr_mix:2 * nr_mix], -7.)
     log_scales = torch.clamp(l[:, :, :, :, nr_mix:2 * nr_mix], min=-7.)
 
-    coeffs = F.tanh(l[:, :, :, :, 2 * nr_mix:3 * nr_mix])
+    coeffs = torch.tanh(l[:, :, :, :, 2 * nr_mix:3 * nr_mix])
     # here and below: getting the means and adjusting them based on preceding
     # sub-pixels
     x = x.contiguous()
-    if args.cuda:
+    if args.cuda == 1:
         x = x.unsqueeze(-1) + Variable(torch.zeros(xs + [nr_mix]).cuda(), requires_grad=False)
     else:
         x = x.unsqueeze(-1) + Variable(torch.zeros(xs + [nr_mix]), requires_grad=False)
@@ -66,9 +67,9 @@ def discretized_mix_logistic_loss(x, l, args):
     centered_x = x - means
     inv_stdv = torch.exp(-log_scales)
     plus_in = inv_stdv * (centered_x + 1. / 255.)
-    cdf_plus = F.sigmoid(plus_in)
+    cdf_plus = torch.sigmoid(plus_in)
     min_in = inv_stdv * (centered_x - 1. / 255.)
-    cdf_min = F.sigmoid(min_in)
+    cdf_min = torch.sigmoid(min_in)
     # log probability for edge case of 0 (before scaling)
     log_cdf_plus = plus_in - F.softplus(plus_in)
     # log probability for edge case of 255 (before scaling)
@@ -126,9 +127,9 @@ def discretized_mix_logistic_loss_1d(x, l):
     centered_x = x - means
     inv_stdv = torch.exp(-log_scales)
     plus_in = inv_stdv * (centered_x + 1. / 255.)
-    cdf_plus = F.sigmoid(plus_in)
+    cdf_plus = torch.sigmoid(plus_in)
     min_in = inv_stdv * (centered_x - 1. / 255.)
-    cdf_min = F.sigmoid(min_in)
+    cdf_min = torch.sigmoid(min_in)
     # log probability for edge case of 0 (before scaling)
     log_cdf_plus = plus_in - F.softplus(plus_in)
     # log probability for edge case of 255 (before scaling)
@@ -259,7 +260,6 @@ def right_shift(x, pad=None):
 def load_part_of_model(model, path):
     params = torch.load(path, map_location=torch.device('cpu'))
     added = 0
-    print(model.state_dict().keys())
     for name, param in params.items():
         name = name[7:]
         if name in model.state_dict().keys():
@@ -270,4 +270,39 @@ def load_part_of_model(model, path):
                 print(e)
                 pass
     # print(added)
-    print('added %s percent of params:' % (added / float(len(model.state_dict().keys()))))
+    # print('added %s percent of params:' % (added / float(len(model.state_dict().keys()))))
+
+def parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--data_dir', type=str,
+                        default='data', help='Location for the dataset')
+    parser.add_argument('-o', '--save_dir', type=str, default='models',
+                        help='Location for parameter checkpoints and samples')
+    parser.add_argument('-d', '--dataset', type=str,
+                        default='cifar', help='Can be either cifar|mnist')
+    parser.add_argument('-p', '--print_every', type=int, default=50,
+                        help='how many iterations between print statements')
+    parser.add_argument('-t', '--save_interval', type=int, default=10,
+                        help='Every how many epochs to write checkpoint/samples?')
+    parser.add_argument('-r', '--load_params', type=str, default=None,
+                        help='Restore training from previous model checkpoint?')
+    # model
+    parser.add_argument('-q', '--nr_resnet', type=int, default=5,
+                        help='Number of residual blocks per stage of the model')
+    parser.add_argument('-n', '--nr_filters', type=int, default=160,
+                        help='Number of filters to use across the model. Higher = larger model.')
+    parser.add_argument('-m', '--nr_logistic_mix', type=int, default=10,
+                        help='Number of logistic components in the mixture. Higher = more flexible model')
+    parser.add_argument('-l', '--lr', type=float,
+                        default=0.0002, help='Base learning rate')
+    parser.add_argument('-e', '--lr_decay', type=float, default=0.999995,
+                        help='Learning rate decay, applied every step of the optimization')
+    parser.add_argument('-b', '--batch_size', type=int, default=64,
+                        help='Batch size during training per GPU')
+    parser.add_argument('-x', '--max_epochs', type=int,
+                        default=2, help='How many epochs to run in total?')
+    parser.add_argument('-s', '--seed', type=int, default=1,
+                        help='Random seed to use')
+    parser.add_argument('-c', '--cuda', type=int, default=1,
+                            help='Use CUDA?')
+    return parser.parse_args()

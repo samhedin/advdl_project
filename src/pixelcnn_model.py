@@ -16,14 +16,16 @@ from src.layers import *
 from src.utils import *
 import numpy as np
 
-class Cnn_train():
-    def __init__(self, args, train_loader, test_loader):
+class CNN_helper():
+    def __init__(self, args, train_loader, test_loader, pretrained):
         self.args = args
         self.train_loader = train_loader
         self.test_loader = test_loader
-        pixelcnnpp_pretrained = "pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth"
+
         self.model = PixelCNN(nr_resnet=5, nr_filters=160)
-        utils.load_part_of_model(self.model, pixelcnnpp_pretrained)
+        if pretrained:
+            pixelcnnpp_pretrained = "pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth"
+            utils.load_part_of_model(self.model, pixelcnnpp_pretrained)
 
     def train(self):
         rescaling_inv = lambda x : .5 * x  + .5
@@ -38,13 +40,14 @@ class Cnn_train():
         writes = 0
         for epoch in range(self.args.max_epochs):
             self.model.train(True)
-            if self.args.cuda:
+            if self.args.cuda == 1:
                 torch.cuda.synchronize()
             train_loss = 0.
             time_ = time.time()
             self.model.train()
             for batch_idx, (x,_) in enumerate(self.train_loader):
-                if self.args.cuda:
+                print("starting batch")
+                if self.args.cuda == 1:
                     x = x.cuda(non_blocking=True)
                 x = Variable(x)
                 output = self.model(x)
@@ -53,6 +56,7 @@ class Cnn_train():
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
+                print("done with one batch")
                 if (batch_idx +1) % self.args.print_every == 0 :
                     deno = self.args.print_every * self.args.batch_size * np.prod(self.obs) * np.log(2.)
                     writer.add_scalar('train/bpd', (train_loss / deno), writes)
@@ -63,16 +67,15 @@ class Cnn_train():
                     writes += 1
                     time_ = time.time()
 
-
             # decrease learning rate
             scheduler.step()
 
-            if self.args.cuda:
+            if self.args.cuda == 1:
                 torch.cuda.synchronize()
             self.model.eval()
             test_loss = 0.
             for batch_idx, (x,_) in enumerate(self.test_loader):
-                if self.args.cuda:
+                if self.args.cuda == 1:
                     x = x.cuda(non_blocking=True)
                 input_var = Variable(x)
                 output = self.model(input_var)
@@ -85,11 +88,12 @@ class Cnn_train():
                 print('test loss : %s' % (test_loss / deno))
 
             if (epoch + 1) % self.args.save_interval == 0:
+                print("saving image")
                 torch.save(self.model.state_dict(), 'self.models/{}_{}.pth'.format(self.model_name, epoch))
                 print('sampling...')
                 sample_t = self.sample()
                 sample_t = rescaling_inv(sample_t)
-                save_image(sample_t,'images/{}_{}.png'.format(self.model_name, epoch),
+                save_image(sample_t,'imgs/{}_{}.png'.format(self.model_name, epoch),
                         nrow=5, padding=0)
 
     def sample(self):
@@ -97,7 +101,7 @@ class Cnn_train():
         sample_batch_size = 25
         self.model.train(False)
         data = torch.zeros(sample_batch_size, self.obs[0], self.obs[1], self.obs[2])
-        if self.args.cuda:
+        if self.args.cuda == 1:
             data = data.cuda()
         for i in range(self.obs[1]):
             for j in range(self.obs[2]):
