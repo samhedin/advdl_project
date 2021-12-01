@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import argparse
 import torch
-import src.model as pixelcnn
+import src.pixelcnn_model as pixelcnn
 
 torch.manual_seed(42)
 import matplotlib.pyplot as plt
