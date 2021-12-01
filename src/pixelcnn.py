@@ -24,8 +24,8 @@ class CNN_helper():
         self.test_loader = test_loader
         self.obs = (3, 32, 32)
 
-        self.model.to(self.device)
         self.model = PixelCNN(nr_resnet=5, nr_filters=160)
+        self.model.to(self.device)
         if pretrained:
             pixelcnnpp_pretrained = "pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth"
             utils.load_part_of_model(self.model, pixelcnnpp_pretrained)
