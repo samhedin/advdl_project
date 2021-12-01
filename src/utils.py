@@ -165,13 +165,13 @@ def sample_from_discretized_mix_logistic_1d(l, nr_mix):
     ls = [int(y) for y in l.size()]
 
 
-    xs = ls[:-1] + [3] #[1] TODO: The paper has [1]
+    xs = ls[:-1] + [1] #[1] TODO: The paper has [1]
 
     # unpack parameters
     logit_probs = l[:, :, :, :nr_mix]
 
     #RuntimeError: shape '[25, 32, 32, 1, 20]' is invalid for input of size 2304000
-    l = l[:, :, :, nr_mix:].contiguous().view(xs + [nr_mix * 3]) # for mean, scale #TODO: The paper has nr_mix *3
+    l = l[:, :, :, nr_mix:].contiguous().view(xs + [nr_mix * 2]) # for mean, scale #TODO: The paper has nr_mix *3
 
     # sample mixture indicator from softmax
     temp = torch.FloatTensor(logit_probs.size())

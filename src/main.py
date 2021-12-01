@@ -45,6 +45,9 @@ def show_image(train_loader):
 
 def save_sample_grid():
     sample = cnn_help.sample(sample_batch_size=1)
+
+    rescaling_inv = lambda x : .5 * x  + .5
+    sample = rescaling_inv(sample)
     grid_img = tfutils.make_grid(sample)
     plt.imshow(grid_img.permute(1, 2, 0))
     plt.savefig("imgs/sample.png")

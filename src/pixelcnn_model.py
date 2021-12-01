@@ -98,7 +98,7 @@ class CNN_helper():
                         nrow=5, padding=0)
 
     def sample(self, sample_batch_size=1):
-        sample_op = lambda x : sample_from_discretized_mix_logistic_1d(x, self.args.nr_logistic_mix)
+        sample_op = lambda x : sample_from_discretized_mix_logistic(x, self.args.nr_logistic_mix)
         self.model.train(False)
         data = torch.zeros(sample_batch_size, self.obs[0], self.obs[1], self.obs[2])
         if self.args.cuda == 1:
@@ -108,7 +108,6 @@ class CNN_helper():
                 with torch.no_grad():
                     data_v = Variable(data)
                     out   = self.model(data_v, sample=True)
-                    print(out)
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
                 if j == 10:
