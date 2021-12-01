@@ -19,8 +19,8 @@ def smooth(image, noise=0.1, proper_convolution=False):
         # or: https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html
         return gaussian_filter(image, sigma=1.2)
 
-def build_dataset(config, noise=0.1, proper_convolution=False) -> Any:
-    transform = pth_transforms.Compose([pth_transforms.ToTensor(), lambda img: smooth(img, noise, proper_convolution)])
+def build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=False) -> Any:
+    transform = pth_transforms.Compose([pth_transforms.ToTensor(), lambda img: smooth(img, noise, proper_convolution)]) if smooth_data else pth_transforms.Compose([pth_transforms.ToTensor()])
 
     if config.dataset == "MNIST":
         train_loader = DataLoader(
