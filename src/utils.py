@@ -273,8 +273,7 @@ def load_part_of_model(model, path):
             except Exception as e:
                 print(e)
                 pass
-    # print(added)
-    # print('added %s percent of params:' % (added / float(len(model.state_dict().keys()))))
+    print('added %s percent of params:' % (added / float(len(model.state_dict().keys()))))
 
 def parser():
     parser = argparse.ArgumentParser()

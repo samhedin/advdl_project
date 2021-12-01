@@ -43,16 +43,17 @@ def show_image(train_loader):
         showimg(after_img_conv, filepath="imgs/after_conv.png")
         break
 
-def sample_img(sample):
-    tfutils.save_image(sample, fp="imgs/sample.png")
-
+def save_sample_grid():
+    sample = cnn_help.sample(sample_batch_size=1)
+    grid_img = tfutils.make_grid(sample)
+    plt.imshow(grid_img.permute(1, 2, 0))
+    plt.savefig("imgs/sample.png")
 
 if __name__ == "__main__":
     config = Config()
     train_loader, test_loader = build_dataset(config, noise=0.1, proper_convolution=False)
     args = utils.parser()
 
-    #cnn_
     cnn_help = pixelcnn.CNN_helper(args, train_loader, test_loader, pretrained=True)
     # cnn_help.train()
-    sample_img(cnn_help.sample())
+    save_sample_grid()
