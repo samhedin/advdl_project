@@ -21,6 +21,7 @@ class CNN_helper():
         self.args = args
         self.train_loader = train_loader
         self.test_loader = test_loader
+        self.obs = (3, 32, 32)
 
         self.model = PixelCNN(nr_resnet=5, nr_filters=160)
         if pretrained:
@@ -105,10 +106,11 @@ class CNN_helper():
             data = data.cuda()
         for i in range(self.obs[1]):
             for j in range(self.obs[2]):
-                data_v = Variable(data, volatile=True)
-                out   = self.model(data_v, sample=True)
-                out_sample = sample_op(out)
-                data[:, :, i, j] = out_sample.data[:, :, i, j]
+                with torch.no_grad():
+                    data_v = Variable(data)
+                    out   = self.model(data_v, sample=True)
+                    out_sample = sample_op(out)
+                    data[:, :, i, j] = out_sample.data[:, :, i, j]
         return data
 
 class PixelCNNLayer_up(nn.Module):

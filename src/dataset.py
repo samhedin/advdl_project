@@ -32,7 +32,7 @@ def build_dataset(config, noise=0.1, proper_convolution=False) -> Any:
             batch_size=config.batch_size, shuffle=True, num_workers=4, pin_memory=True
         )
 
-    if config.dataset == "CIFAR10":
+    else:
         train_loader = DataLoader(
             datasets.CIFAR10(config.data_root, train=True, transform=transform, download=True),
             batch_size=config.batch_size, shuffle=True, num_workers=4, pin_memory=True

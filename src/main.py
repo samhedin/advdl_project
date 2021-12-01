@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 import src.utils as utils
-
+from torchvision import utils as tfutils
 matplotlib.use("TkAgg")
 from src.dataset import build_dataset, smooth
 
@@ -43,10 +43,8 @@ def show_image(train_loader):
         showimg(after_img_conv, filepath="imgs/after_conv.png")
         break
 
-def show_sample(sample):
-    img = sample.cpu().numpy()
-    plt.imshow(img)
-    plt.savefig("imgs/sample.png")
+def sample_img(sample):
+    tfutils.save_image(sample, fp="imgs/sample.png")
 
 
 if __name__ == "__main__":
@@ -56,5 +54,5 @@ if __name__ == "__main__":
 
     #cnn_
     cnn_help = pixelcnn.CNN_helper(args, train_loader, test_loader, pretrained=True)
-    cnn_help.train()
-    show_sample(cnn_help.sample())
+    # cnn_help.train()
+    sample_img(cnn_help.sample())
