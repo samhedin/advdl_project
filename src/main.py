@@ -6,10 +6,8 @@ import src.pixelcnn_model as pixelcnn
 torch.manual_seed(42)
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib
 import src.utils as utils
 from torchvision import utils as tfutils
-matplotlib.use("TkAgg")
 from src.dataset import build_dataset, smooth
 
 @dataclass
@@ -44,7 +42,7 @@ def show_image(train_loader):
         break
 
 def save_sample_grid():
-    sample = cnn_help.sample(sample_batch_size=1)
+    sample = cnn_help.sample(sample_batch_size=2)
 
     rescaling_inv = lambda x : .5 * x  + .5
     sample = rescaling_inv(sample)

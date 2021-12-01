@@ -98,15 +98,18 @@ class CNN_helper():
                         nrow=5, padding=0)
 
     def sample(self, sample_batch_size=1):
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
         sample_op = lambda x : sample_from_discretized_mix_logistic(x, self.args.nr_logistic_mix)
         self.model.train(False)
+        self.model.to(device)
+
         data = torch.zeros(sample_batch_size, self.obs[0], self.obs[1], self.obs[2])
-        if self.args.cuda == 1:
-            data = data.cuda()
+        data.to(device)
         for i in range(self.obs[1]):
             for j in range(self.obs[2]):
                 with torch.no_grad():
-                    data_v = Variable(data)
+                    data_v = Variable(data).to(device)
                     out   = self.model(data_v, sample=True)
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
