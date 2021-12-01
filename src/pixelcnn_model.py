@@ -12,8 +12,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from src.layers import *
-from src.utils import *
+from layers import *
+from utils import *
 import numpy as np
 
 class CNN_helper():
@@ -108,13 +108,8 @@ class CNN_helper():
                 with torch.no_grad():
                     data_v = Variable(data)
                     out   = self.model(data_v, sample=True)
-                    print(out)
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
-                if j == 10:
-                    break
-            if i == 10:
-                break
         return data
 
 class PixelCNNLayer_up(nn.Module):
