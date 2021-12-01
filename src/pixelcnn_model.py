@@ -18,11 +18,13 @@ import numpy as np
 
 class CNN_helper():
     def __init__(self, args, train_loader, test_loader, pretrained=False):
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.args = args
         self.train_loader = train_loader
         self.test_loader = test_loader
         self.obs = (3, 32, 32)
 
+        self.model.to(self.device)
         self.model = PixelCNN(nr_resnet=5, nr_filters=160)
         if pretrained:
             pixelcnnpp_pretrained = "pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth"
