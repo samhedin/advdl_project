@@ -17,7 +17,7 @@ from src.utils import *
 import numpy as np
 
 class CNN_helper():
-    def __init__(self, args, train_loader, test_loader, pretrained):
+    def __init__(self, args, train_loader, test_loader, pretrained=False):
         self.args = args
         self.train_loader = train_loader
         self.test_loader = test_loader

@@ -41,8 +41,8 @@ def show_image(train_loader):
         showimg(after_img_conv, filepath="imgs/after_conv.png")
         break
 
-def save_sample_grid():
-    sample = cnn_help.sample(sample_batch_size=2)
+def save_sample_grid(cnn_helper):
+    sample = cnn_helper.sample(sample_batch_size=2)
 
     rescaling_inv = lambda x : .5 * x  + .5
     sample = rescaling_inv(sample)
@@ -50,11 +50,33 @@ def save_sample_grid():
     plt.imshow(grid_img.permute(1, 2, 0))
     plt.savefig("imgs/sample.png")
 
-if __name__ == "__main__":
-    config = Config()
-    train_loader, test_loader = build_dataset(config, noise=0.1, proper_convolution=False)
+
+# Compare how it is to generate images from pixelcnn
+# trained on smooth vs trained on non-smooth data.
+def compare_smooth_and_unsmooth():
+    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=True)
+    train_loader_regular, test_loader_regular = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=False)
     args = utils.parser()
 
-    cnn_help = pixelcnn.CNN_helper(args, train_loader, test_loader, pretrained=True)
-    # cnn_help.train()
-    save_sample_grid()
+    smooth_model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth)
+    smooth_model.train()
+    sample = smooth_model.sample(sample_batch_size=2)
+
+    rescaling_inv = lambda x : .5 * x  + .5
+    sample = rescaling_inv(sample)
+    grid_img = tfutils.make_grid(sample)
+    plt.imshow(grid_img.permute(1, 2, 0))
+
+    plt.savefig("imgs/smooth.png")
+
+    unsmooth_model = pixelcnn.CNN_helper(args, train_loader_regular, test_loader_regular)
+    sample = unsmooth_model.sample(sample_batch_size=2)
+    rescaling_inv = lambda x : .5 * x  + .5
+    sample = rescaling_inv(sample)
+    grid_img = tfutils.make_grid(sample)
+    plt.imshow(grid_img.permute(1, 2, 0))
+    plt.savefig("imgs/unsmooth.png")
+
+if __name__ == "__main__":
+    config = Config()
+    compare_smooth_and_unsmooth()

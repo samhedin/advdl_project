@@ -18,3 +18,7 @@ In this project, we are going to reproduce some part of the results from the pap
   - The images we generate with that amount of noise do not look like the presented images.
 
 Original paper's repo: https://github.com/chenlin9/Autoregressive-Modeling-with-Distribution-Smoothing
+
+* How to SSH
+Create =~/.ssh/config=
+=conda activate adlenv=
