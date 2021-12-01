@@ -110,10 +110,6 @@ class CNN_helper():
                     out   = self.model(data_v, sample=True)
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
-                if j == 10:
-                    break
-            if i == 10:
-                break
         return data
 
 class PixelCNNLayer_up(nn.Module):
