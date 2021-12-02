@@ -27,7 +27,7 @@ class CNN_helper():
 
         self.model_name = f"stage1_model"
 
-        self.model = PixelCNN(nr_resnet=3, nr_filters=160)
+        self.model = PixelCNN(nr_resnet=5, nr_filters=160)
         # Due to memory constraint, we max out at 3 Resnet, the paper has 5
         if pretrained:
             model_path = "models/" + os.listdir("models")[-1]

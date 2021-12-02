@@ -65,7 +65,7 @@ def train_stage1():
     config = Config()
     args = utils.parser()
     train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=False)
+    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
     model.train()
 
     sample = model.sample(sample_batch_size=2)
