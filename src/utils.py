@@ -262,21 +262,6 @@ def right_shift(x, pad=None):
     pad = nn.ZeroPad2d((1, 0, 0, 0)) if pad is None else pad
     return pad(x)
 
-
-def load_part_of_model(model, path):
-    params = torch.load(path, map_location=torch.device('cpu'))
-    added = 0
-    for name, param in params.items():
-        name = name[7:]
-        if name in model.state_dict().keys():
-            try :
-                model.state_dict()[name].copy_(param)
-                added += 1
-            except Exception as e:
-                print(e)
-                pass
-    print('added %s percent of params:' % (added / float(len(model.state_dict().keys()))))
-
 def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--data_dir', type=str,
@@ -287,7 +272,7 @@ def parser():
                         default='cifar', help='Can be either cifar|mnist')
     parser.add_argument('-p', '--print_every', type=int, default=50,
                         help='how many iterations between print statements')
-    parser.add_argument('-t', '--save_interval', type=int, default=10,
+    parser.add_argument('-t', '--save_interval', type=int, default=1,
                         help='Every how many epochs to write checkpoint/samples?')
     parser.add_argument('-r', '--load_params', type=str, default=None,
                         help='Restore training from previous model checkpoint?')

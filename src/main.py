@@ -44,8 +44,7 @@ def show_image(train_loader):
 def save_sample_grid(cnn_helper):
     sample = cnn_helper.sample(sample_batch_size=2)
 
-    rescaling_inv = lambda x : .5 * x  + .5
-    sample = rescaling_inv(sample)
+    sample = utils.rescaling_inv(sample)
     grid_img = tfutils.make_grid(sample)
     plt.imshow(grid_img.permute(1, 2, 0))
     plt.savefig("imgs/sample.png")
@@ -53,32 +52,18 @@ def save_sample_grid(cnn_helper):
 
 # Compare how it is to generate images from pixelcnn
 # trained on smooth vs trained on non-smooth data.
-def compare_smooth_and_unsmooth(try_smooth=False):
+def train_stage1():
     args = utils.parser()
+    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=True)
+    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
+    model.train()
 
-    if try_smooth:
-        train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=True)
-        smooth_model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth)
-        smooth_model.train()
-        sample = smooth_model.sample(sample_batch_size=2)
-
-        rescaling_inv = lambda x : .5 * x  + .5
-        sample = rescaling_inv(sample)
-        grid_img = tfutils.make_grid(sample)
-        plt.imshow(grid_img.permute(1, 2, 0))
-
-        plt.savefig("imgs/smooth.png")
-    else:
-        train_loader_regular, test_loader_regular = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=False)
-        unsmooth_model = pixelcnn.CNN_helper(args, train_loader_regular, test_loader_regular, smooth_data=False)
-        unsmooth_model.train()
-        sample = unsmooth_model.sample(sample_batch_size=2)
-        rescaling_inv = lambda x : .5 * x  + .5
-        sample = rescaling_inv(sample)
-        grid_img = tfutils.make_grid(sample)
-        plt.imshow(grid_img.permute(1, 2, 0))
-        plt.savefig("imgs/unsmooth.png")
+    sample = model.sample(sample_batch_size=2)
+    sample = utils.rescaling_inv(sample)
+    grid_img = tfutils.make_grid(sample)
+    plt.imshow(grid_img.permute(1, 2, 0))
+    plt.savefig("imgs/stage1_out.png")
 
 if __name__ == "__main__":
     config = Config()
-    compare_smooth_and_unsmooth()
+    train_stage1()
