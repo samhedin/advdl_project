@@ -23,3 +23,25 @@ Original paper's repo: https://github.com/chenlin9/Autoregressive-Modeling-with-
 Create =~/.ssh/config=
 =conda activate adlenv=
 =/sshx:adlvm:/home/cuong/advdl_project/=
+
+* Single step denoising
+** Notes
+https://github.com/Rayhane-mamah/Tacotron-2/issues/155
+** Pipeline
+1. Train stage 1 on smooth data. This gives $p(\tilde x)$.
+2. Sample from stage 1. This returns smooth images with distribution $p(\tilde x)$, and save the images.
+3. Do single step denoising
+
+** Single step denoising
+\begin{align*}
+\bar x = \tilde x + \sigma^2 \nabla_{\tilde x} \log(p_\theta(\tilde x))
+\end{align*}
+Sampling from stage 1 network gives the image $\tilde x$
+The variance $\sigma^2$ is known as a parameter.
+$\nabla_{\tilde x} \log(p_\theta(\tilde x))$
+
+* PIPELINE FOR TWO STEP DENOISING
+1. Train stage 1 on smooth data. This gives $p(\tilde x)$.
+2. Sample from stage 1. This returns smooth images with distribution $p(\tilde x)$, and save the images.
+3. Train stage 2. This takes as input smooth images, and is trained to map those to regular images.
+4. To get the final output of the network(s). Sample from stage 1 to produce a smooth image. Give that image to stage 2, and stage 2 will denoise that smooth image to produce a regular image.
