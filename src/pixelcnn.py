@@ -16,6 +16,7 @@ from src.layers import *
 from src.utils import *
 import numpy as np
 
+
 class CNN_helper():
     def __init__(self, args, train_loader, test_loader, pretrained=False, stage=1):
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -115,6 +116,7 @@ class CNN_helper():
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
         return data
+
 
 class PixelCNNLayer_up(nn.Module):
     def __init__(self, nr_resnet, nr_filters, resnet_nonlinearity):
@@ -408,6 +410,12 @@ def sample_from_discretized_mix_logistic_inverse_CDF(x, model, nr_mix, noise=[],
     log_scales_g = log_scales[..., 1, :]
 
     log_p_r, log_p_r_mixtures = log_cdf_pdf_r(x0, mode='pdf', mixtures=True)
+
+
+def mix_logistic_loss(x: torch.Tensor, logits: torch.Tensor):
+    # TODO: Complete this function
+    pass
+
 
 # if __name__ == "__main__":
 #     """testing loss with tf version"""

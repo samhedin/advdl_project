@@ -33,7 +33,7 @@ def log_prob_from_logits(x):
     return x - m - torch.log(torch.sum(torch.exp(x - m), dim=axis, keepdim=True))
 
 
-def discretized_mix_logistic_loss(x, l, args):
+def discretized_mix_logistic_loss(x, l, args = None):
     """ log-likelihood for mixture of discretized logistics, assumes the data has been rescaled to [-1,1] interval """
     # Pytorch ordering
     x = x.permute(0, 2, 3, 1)
@@ -53,10 +53,11 @@ def discretized_mix_logistic_loss(x, l, args):
     # here and below: getting the means and adjusting them based on preceding
     # sub-pixels
     x = x.contiguous()
-    if args.cuda == 1:
-        x = x.unsqueeze(-1) + Variable(torch.zeros(xs + [nr_mix]).cuda(), requires_grad=False)
-    else:
-        x = x.unsqueeze(-1) + Variable(torch.zeros(xs + [nr_mix]), requires_grad=False)
+    # if args.cuda == 1:
+    # TODO: We're default to use CUDA
+    x = x.unsqueeze(-1) + Variable(torch.zeros(xs + [nr_mix]).cuda(), requires_grad=False)
+    # else:
+    #     x = x.unsqueeze(-1) + Variable(torch.zeros(xs + [nr_mix]), requires_grad=False)
     m2 = (means[:, :, :, 1, :] + coeffs[:, :, :, 0, :]
                 * x[:, :, :, 0, :]).view(xs[0], xs[1], xs[2], 1, nr_mix)
 

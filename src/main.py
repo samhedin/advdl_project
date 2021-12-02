@@ -9,6 +9,8 @@ import numpy as np
 import src.utils as utils
 from torchvision import utils as tfutils
 from src.dataset import build_dataset, smooth, stage2_image_loader
+from src.sampler import single_step_denoising
+
 
 @dataclass
 class Config:
@@ -93,9 +95,16 @@ def train_stage_1(config, args):
     print(f"model name: {model.model_name}")
 
 
+def test_single_step_denoising(args):
+    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
+    helper_module = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1)
+
+    x = single_step_denoising(helper_module.model, obs=helper_module.obs)
+    import pdb; pdb.set_trace()
+
 if __name__ == "__main__":
     config = Config()
     args = utils.parser()
-    train_stage_1(config, args)
-
+    # train_stage_1(config, args)
     # compare_smooth_and_unsmooth()
+    test_single_step_denoising(args)
