@@ -15,6 +15,8 @@ def concat_elu(x):
     axis = len(x.size()) - 3
     return F.elu(torch.cat([x, -x], dim=axis))
 
+def rescaling_inv(x):
+    return .5 * x  + .5
 
 def log_sum_exp(x):
     """ numerically stable log_sum_exp implementation that prevents overflow """
