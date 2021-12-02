@@ -99,27 +99,28 @@ def train_stage_1(config, args):
 
 def test_single_step_denoising(args):
     train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-    helper_module = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1, pretrained=True)
+    helper_module = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1, pretrained=False)
 
     x = single_step_denoising(helper_module, obs=helper_module.obs)
-    sample = rescaling_inv(x)
-    grid_img = tfutils.make_grid(sample)
-    plt.imshow(grid_img.permute(1, 2, 0))
+    # sample = rescaling_inv(x)
+    # grid_img = tfutils.make_grid(sample)
+    # plt.imshow(grid_img.permute(1, 2, 0))
 
-    plt.savefig("imgs/ssd1.png")
+    # plt.savefig("imgs/ssd1.png")
 
     # move x to all positive
-    # img = x.detach().cpu().numpy()[0]
-    # img = img.transpose(2, 1, 0)
-    # img += np.abs(img.min())
-    # # Rescale img to 0 - 1
-    # img = img * 1. / img.max()
-    # plt.imsave("imgs/ssd1.png", img)
+    img = x.detach().cpu().numpy()[0]
+    img = img.transpose(2, 1, 0)
+    img += np.abs(img.min())
+    # Rescale img to 0 - 1
+    img = img * 1. / img.max()
+    plt.imsave("imgs/ssd1.png", img)
+    import pdb; pdb.set_trace()
 
 
 if __name__ == "__main__":
     config = Config()
     args = utils.parser()
     # train_stage_1(config, args)
-    compare_smooth_and_unsmooth()
-    # test_single_step_denoising(args)
+    # compare_smooth_and_unsmooth()
+    test_single_step_denoising(args)
