@@ -289,6 +289,9 @@ def parser():
                         help='Every how many epochs to write checkpoint/samples?')
     parser.add_argument('-r', '--load_params', type=str, default=None,
                         help='Restore training from previous model checkpoint?')
+    parser.add_argument('-v', '--smooth', type=bool, default=True,
+                        help='Smooth input data?')
+
     # model
     parser.add_argument('-q', '--nr_resnet', type=int, default=5,
                         help='Number of residual blocks per stage of the model')
@@ -303,7 +306,7 @@ def parser():
     parser.add_argument('-b', '--batch_size', type=int, default=64,
                         help='Batch size during training per GPU')
     parser.add_argument('-x', '--max_epochs', type=int,
-                        default=2, help='How many epochs to run in total?')
+                        default=100, help='How many epochs to run in total?')
     parser.add_argument('-s', '--seed', type=int, default=1,
                         help='Random seed to use')
     parser.add_argument('-c', '--cuda', type=int, default=1,

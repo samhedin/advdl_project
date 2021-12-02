@@ -22,3 +22,4 @@ Original paper's repo: https://github.com/chenlin9/Autoregressive-Modeling-with-
 * How to SSH
 Create =~/.ssh/config=
 =conda activate adlenv=
+=/sshx:adlvm:/home/cuong/advdl_project/=

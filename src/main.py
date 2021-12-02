@@ -53,29 +53,31 @@ def save_sample_grid(cnn_helper):
 
 # Compare how it is to generate images from pixelcnn
 # trained on smooth vs trained on non-smooth data.
-def compare_smooth_and_unsmooth():
-    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=True)
-    train_loader_regular, test_loader_regular = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=False)
+def compare_smooth_and_unsmooth(try_smooth=False):
     args = utils.parser()
 
-    smooth_model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth)
-    smooth_model.train()
-    sample = smooth_model.sample(sample_batch_size=2)
+    if try_smooth:
+        train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=True)
+        smooth_model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth)
+        smooth_model.train()
+        sample = smooth_model.sample(sample_batch_size=2)
 
-    rescaling_inv = lambda x : .5 * x  + .5
-    sample = rescaling_inv(sample)
-    grid_img = tfutils.make_grid(sample)
-    plt.imshow(grid_img.permute(1, 2, 0))
+        rescaling_inv = lambda x : .5 * x  + .5
+        sample = rescaling_inv(sample)
+        grid_img = tfutils.make_grid(sample)
+        plt.imshow(grid_img.permute(1, 2, 0))
 
-    plt.savefig("imgs/smooth.png")
-
-    unsmooth_model = pixelcnn.CNN_helper(args, train_loader_regular, test_loader_regular)
-    sample = unsmooth_model.sample(sample_batch_size=2)
-    rescaling_inv = lambda x : .5 * x  + .5
-    sample = rescaling_inv(sample)
-    grid_img = tfutils.make_grid(sample)
-    plt.imshow(grid_img.permute(1, 2, 0))
-    plt.savefig("imgs/unsmooth.png")
+        plt.savefig("imgs/smooth.png")
+    else:
+        train_loader_regular, test_loader_regular = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=False)
+        unsmooth_model = pixelcnn.CNN_helper(args, train_loader_regular, test_loader_regular, smooth_data=False)
+        unsmooth_model.train()
+        sample = unsmooth_model.sample(sample_batch_size=2)
+        rescaling_inv = lambda x : .5 * x  + .5
+        sample = rescaling_inv(sample)
+        grid_img = tfutils.make_grid(sample)
+        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.savefig("imgs/unsmooth.png")
 
 if __name__ == "__main__":
     config = Config()

@@ -17,14 +17,16 @@ from src.utils import *
 import numpy as np
 
 class CNN_helper():
-    def __init__(self, args, train_loader, test_loader, pretrained=False):
+    def __init__(self, args, train_loader, test_loader, pretrained=False, smooth_data=True):
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.args = args
         self.train_loader = train_loader
         self.test_loader = test_loader
         self.obs = (3, 32, 32)
 
-        self.model = PixelCNN(nr_resnet=5, nr_filters=160)
+        self.model_name = f'pcnn_lr_{self.args.lr:.5f}_nr-resnet_{self.args.nr_resnet}_nr-filters_{self.args.nr_filters}_smooth_data_{smooth_data}'#
+        # Due to memory constraint, we max out at 3 Resnet, the paper has 5
+        self.model = PixelCNN(nr_resnet=3, nr_filters=160)
         self.model.to(self.device)
         if pretrained:
             pixelcnnpp_pretrained = "pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth"
@@ -32,8 +34,6 @@ class CNN_helper():
 
     def train(self):
         rescaling_inv = lambda x : .5 * x  + .5
-        self.obs = (3, 32, 32)
-        self.model_name = 'pcnn_lr:{:.5f}_nr-resnet{}_nr-filters{}'.format(self.args.lr, self.args.nr_resnet, self.args.nr_filters)
         writer = SummaryWriter(log_dir=os.path.join('runs', self.model_name))
         loss_op   = lambda real, fake : discretized_mix_logistic_loss(real, fake, self.args)
         optimizer = optim.Adam(self.model.parameters(), lr=self.args.lr)
@@ -42,6 +42,7 @@ class CNN_helper():
         print('starting training')
         writes = 0
         for epoch in range(self.args.max_epochs):
+            print(f"epoch: {epoch}")
             self.model.train(True)
             if self.args.cuda == 1:
                 torch.cuda.synchronize()
@@ -49,7 +50,6 @@ class CNN_helper():
             time_ = time.time()
             self.model.train()
             for batch_idx, (x,_) in enumerate(self.train_loader):
-                print("starting batch")
                 if self.args.cuda == 1:
                     x = x.cuda(non_blocking=True)
                 x = Variable(x)
@@ -59,7 +59,6 @@ class CNN_helper():
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
-                print("done with one batch")
                 if (batch_idx +1) % self.args.print_every == 0 :
                     deno = self.args.print_every * self.args.batch_size * np.prod(self.obs) * np.log(2.)
                     writer.add_scalar('train/bpd', (train_loss / deno), writes)
@@ -83,7 +82,7 @@ class CNN_helper():
                 input_var = Variable(x)
                 output = self.model(input_var)
                 loss = loss_op(input_var, output)
-                test_loss += loss.data[0]
+                test_loss += loss.item()
                 del loss, output
 
                 deno = batch_idx * self.args.batch_size * np.prod(self.obs) * np.log(2.)
@@ -92,7 +91,7 @@ class CNN_helper():
 
             if (epoch + 1) % self.args.save_interval == 0:
                 print("saving image")
-                torch.save(self.model.state_dict(), 'self.models/{}_{}.pth'.format(self.model_name, epoch))
+                torch.save(self.model.state_dict(), f'models/{self.model_name}_{epoch}.pth')
                 print('sampling...')
                 sample_t = self.sample()
                 sample_t = rescaling_inv(sample_t)
@@ -292,7 +291,8 @@ class PixelCNN(nn.Module):
 
     def forward(self, x, sample=False):
         # similar as done in the tf repo :
-        if self.init_padding is None and not sample:
+        # if self.init_padding is None and not sample: # TODO: remove True after debugging
+        if not sample:
             xs = [int(y) for y in x.size()]
             padding = Variable(torch.ones(xs[0], 1, xs[2], xs[3]), requires_grad=False)
             self.init_padding = padding.cuda() if x.is_cuda else padding
