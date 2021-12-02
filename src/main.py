@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import numpy as np
+
 import torch
 import src.pixelcnn as pixelcnn
 
@@ -63,9 +65,9 @@ def compare_smooth_and_unsmooth(try_smooth=False):
     args = utils.parser()
 
     if try_smooth:
-        train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=True)
-        smooth_model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth)
-        smooth_model.train()
+        train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
+        smooth_model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
+        # smooth_model.train()
         sample = smooth_model.sample(sample_batch_size=2)
 
         sample = rescaling_inv(sample)
@@ -74,9 +76,9 @@ def compare_smooth_and_unsmooth(try_smooth=False):
 
         plt.savefig("imgs/smooth.png")
     else:
-        train_loader_regular, test_loader_regular = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=False)
-        unsmooth_model = pixelcnn.CNN_helper(args, train_loader_regular, test_loader_regular, stage=False)
-        unsmooth_model.train()
+        train_loader_regular, test_loader_regular = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=False)
+        unsmooth_model = pixelcnn.CNN_helper(args, train_loader_regular, test_loader_regular, stage=False, pretrained=True)
+        # unsmooth_model.train()
         sample = unsmooth_model.sample(sample_batch_size=2)
         sample = rescaling_inv(sample)
         grid_img = tfutils.make_grid(sample)
@@ -97,14 +99,27 @@ def train_stage_1(config, args):
 
 def test_single_step_denoising(args):
     train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-    helper_module = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1)
+    helper_module = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1, pretrained=True)
 
-    x = single_step_denoising(helper_module.model, obs=helper_module.obs)
-    import pdb; pdb.set_trace()
+    x = single_step_denoising(helper_module, obs=helper_module.obs)
+    sample = rescaling_inv(x)
+    grid_img = tfutils.make_grid(sample)
+    plt.imshow(grid_img.permute(1, 2, 0))
+
+    plt.savefig("imgs/ssd1.png")
+
+    # move x to all positive
+    # img = x.detach().cpu().numpy()[0]
+    # img = img.transpose(2, 1, 0)
+    # img += np.abs(img.min())
+    # # Rescale img to 0 - 1
+    # img = img * 1. / img.max()
+    # plt.imsave("imgs/ssd1.png", img)
+
 
 if __name__ == "__main__":
     config = Config()
     args = utils.parser()
     # train_stage_1(config, args)
-    # compare_smooth_and_unsmooth()
-    test_single_step_denoising(args)
+    compare_smooth_and_unsmooth()
+    # test_single_step_denoising(args)

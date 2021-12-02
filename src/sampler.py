@@ -14,20 +14,13 @@ def single_step_denoising(model, sample_batch_size: int = 1, nr_logistic_mix: in
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     sample_op = lambda x : sample_from_discretized_mix_logistic(x, nr_logistic_mix)
-    model.train(False)
-    model.to(device)
+    # model.train(False)
+    # model.to(device)
 
     # First, sample to get x tilde
-    x_tilde = torch.zeros(sample_batch_size, obs[0], obs[1], obs[2]).to(device)
+    x_tilde = model.sample(sample_batch_size)
+    return x_tilde
 
-    for i in range(obs[1]):
-        for j in range(obs[2]):
-            with torch.no_grad():
-                data_v = Variable(x_tilde).to(device)
-                out = model(data_v, sample=True)
-                out_sample = sample_op(out)
-                x_tilde[:, :, i, j] = out_sample.data[:, :, i, j]
-    
     # Log PDF:
     xt_v = Variable(x_tilde, requires_grad=True).to(device)
     logits = model(xt_v, sample=True)
