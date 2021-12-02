@@ -57,12 +57,15 @@ def save_sample_grid(cnn_helper):
 def rescaling_inv(x):
     return .5 * x  + .5
 
-# Compare how it is to generate images from pixelcnn
-# trained on smooth vs trained on non-smooth data.
+
 def train_stage1():
+    """
+    Stage 1 Training: Learning the smooth distribution
+    """
+    config = Config()
     args = utils.parser()
-    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_data=True)
-    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
+    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
+    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=False)
     model.train()
 
     sample = model.sample(sample_batch_size=2)
@@ -72,17 +75,5 @@ def train_stage1():
     plt.savefig("imgs/stage1_out.png")
 
 
-# stage 1 takes in smooth data and trains it against a smooth output.
-def train_stage_1(config, args):
-    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1)
-    model.train()
-    samples = rescaling_inv(model.sample(sample_batch_size=10))
-    for i, s in enumerate(samples):
-        showimg(s, filepath=f"imgs/stage_1_out/epoch_{args.max_epochs}_{i}.png")
-    print(f"model name: {model.model_name}")
-
-
 if __name__ == "__main__":
-    config = Config()
     train_stage1()

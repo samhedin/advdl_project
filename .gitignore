@@ -17,3 +17,4 @@ data/*
 pretrained/
 runs/
 logs/
+models

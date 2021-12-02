@@ -37,6 +37,8 @@ class CNN_helper():
             # This lets us resume training from an earlier epoch,
             # and upon subsequent saves we won't overwrite previously saved epochs.
             self.starting_epoch = int(model_path[20:22])
+        else:
+            self.starting_epoch = 0
         self.model.to(self.device)
 
     def train(self):
@@ -337,6 +339,7 @@ class PixelCNN(nn.Module):
 
         return x_out
 
+
 def sample_from_discretized_mix_logistic_inverse_CDF(x, model, nr_mix, noise=[], u=None, clamp=True, bisection_iter=15, T=1):
     # Pytorch ordering
     l = model(x)
@@ -408,31 +411,3 @@ def sample_from_discretized_mix_logistic_inverse_CDF(x, model, nr_mix, noise=[],
     log_scales_g = log_scales[..., 1, :]
 
     log_p_r, log_p_r_mixtures = log_cdf_pdf_r(x0, mode='pdf', mixtures=True)
-
-
-def mix_logistic_loss(x: torch.Tensor, logits: torch.Tensor):
-    # TODO: Complete this function
-    pass
-
-
-# if __name__ == "__main__":
-#     """testing loss with tf version"""
-#     np.random.seed(1)
-# xx_t = (np.random.rand(15, 32, 32, 100) * 3).astype("float32")
-#     yy_t = np.random.uniform(-1, 1, size=(15, 32, 32, 3)).astype("float32")
-#     x_t = Variable(torch.from_numpy(xx_t)).cuda()
-#     y_t = Variable(torch.from_numpy(yy_t)).cuda()
-#     loss = discretized_mix_logistic_loss(y_t, x_t)
-
-#     """ testing self.model and deconv dimensions """
-#     x = torch.cuda.FloatTensor(32, 3, 32, 32).uniform_(-1.0, 1.0)
-#     xv = Variable(x).cpu()
-#     ds = down_shifted_deconv2d(3, 40, stride=(2, 2))
-#     x_v = Variable(x)
-
-#     """ testing loss compatibility """
-#     self.model = PixelCNN(nr_resnet=3, nr_filters=100, input_channels=x.size(1))
-#     self.model = self.model.cuda()
-#     out = self.model(x_v)
-#     loss = discretized_mix_logistic_loss(x_v, out)
-#     print("loss : %s" % loss.data[0])
