@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import numpy as np
+
 import torch
 import src.pixelcnn as pixelcnn
 
@@ -8,7 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import src.utils as utils
 from torchvision import utils as tfutils
-from src.dataset import build_dataset, smooth
+from src.dataset import build_dataset, smooth, stage2_image_loader
+from src.sampler import single_step_denoising
+
 
 @dataclass
 class Config:
@@ -50,6 +54,9 @@ def save_sample_grid(cnn_helper):
     plt.savefig("imgs/sample.png")
 
 
+def rescaling_inv(x):
+    return .5 * x  + .5
+
 # Compare how it is to generate images from pixelcnn
 # trained on smooth vs trained on non-smooth data.
 def train_stage1():
@@ -63,6 +70,38 @@ def train_stage1():
     grid_img = tfutils.make_grid(sample)
     plt.imshow(grid_img.permute(1, 2, 0))
     plt.savefig("imgs/stage1_out.png")
+
+
+# stage 1 takes in smooth data and trains it against a smooth output.
+def train_stage_1(config, args):
+    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
+    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1)
+    model.train()
+    samples = rescaling_inv(model.sample(sample_batch_size=10))
+    for i, s in enumerate(samples):
+        showimg(s, filepath=f"imgs/stage_1_out/epoch_{args.max_epochs}_{i}.png")
+    print(f"model name: {model.model_name}")
+
+
+def test_single_step_denoising(args):
+    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
+    helper_module = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1, pretrained=True)
+
+    x = single_step_denoising(helper_module, obs=helper_module.obs)
+    sample = rescaling_inv(x)
+    grid_img = tfutils.make_grid(sample)
+    plt.imshow(grid_img.permute(1, 2, 0))
+
+    plt.savefig("imgs/ssd1.png")
+
+    # move x to all positive
+    # img = x.detach().cpu().numpy()[0]
+    # img = img.transpose(2, 1, 0)
+    # img += np.abs(img.min())
+    # # Rescale img to 0 - 1
+    # img = img * 1. / img.max()
+    # plt.imsave("imgs/ssd1.png", img)
+
 
 if __name__ == "__main__":
     config = Config()

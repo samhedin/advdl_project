@@ -16,6 +16,7 @@ from src.layers import *
 from src.utils import *
 import numpy as np
 
+
 class CNN_helper():
     def __init__(self, args, train_loader, test_loader, pretrained=True):
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -113,6 +114,7 @@ class CNN_helper():
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
         return data
+
 
 class PixelCNNLayer_up(nn.Module):
     def __init__(self, nr_resnet, nr_filters, resnet_nonlinearity):
@@ -334,6 +336,83 @@ class PixelCNN(nn.Module):
         assert len(u_list) == len(ul_list) == 0, pdb.set_trace()
 
         return x_out
+
+def sample_from_discretized_mix_logistic_inverse_CDF(x, model, nr_mix, noise=[], u=None, clamp=True, bisection_iter=15, T=1):
+    # Pytorch ordering
+    l = model(x)
+    l = l.permute(0, 2, 3, 1)
+    ls = [int(y) for y in l.size()]
+    xs = ls[:-1] + [3]
+
+    #added
+    if len(noise) != 0:
+        noise = noise.permute(0, 2, 3, 1)
+    #added
+
+    # unpack parameters
+    logit_probs = l[:, :, :, :nr_mix] / T
+    l = l[:, :, :, nr_mix:].contiguous().view(xs + [nr_mix * 3])
+    # sample mixture indicator from softmax
+    if u is None:
+        u = l.new_empty(l.shape[0], l.shape[1] * l.shape[2] * 3)
+        u.uniform_(1e-5, 1. - 1e-5)
+        u = torch.log(u) - torch.log(1. - u)
+
+    u_r, u_g, u_b = torch.chunk(u, chunks=3, dim=-1)
+
+    u_r = u_r.reshape(ls[:-1])
+    u_g = u_g.reshape(ls[:-1])
+    u_b = u_b.reshape(ls[:-1])
+
+    log_softmax = torch.log_softmax(logit_probs, dim=-1)
+    coeffs = torch.tanh(l[:, :, :, :, 2 * nr_mix: 3 * nr_mix])
+    means = l[:, :, :, :, :nr_mix]
+    log_scales = torch.clamp(l[:, :, :, :, nr_mix:2 * nr_mix], min=-7.) + np.log(T)
+    if clamp:
+        ubs = l.new_ones(ls[:-1])
+        lbs = -ubs
+    else:
+        ubs = l.new_ones(ls[:-1]) * 20.
+        lbs = -ubs
+
+    means_r = means[..., 0, :]
+    log_scales_r = log_scales[..., 0, :]
+
+    def log_cdf_pdf_r(values, mode='cdf', mixtures=False):
+        values = values.unsqueeze(-1)
+        centered_values = (values - means_r) / log_scales_r.exp()
+
+        if mode == 'cdf':
+            log_logistic_cdf = -F.softplus(-centered_values)
+            log_logistic_sf = -F.softplus(centered_values)
+            log_cdf = torch.logsumexp(log_softmax + log_logistic_cdf, dim=-1)
+            log_sf = torch.logsumexp(log_softmax + log_logistic_sf, dim=-1)
+            logit = log_cdf - log_sf
+
+            return logit if not mixtures else (logit, log_logistic_cdf)
+
+        elif mode == 'pdf':
+            log_logistic_pdf = -centered_values - log_scales_r - 2. * F.softplus(-centered_values)
+            log_pdf = torch.logsumexp(log_softmax + log_logistic_pdf, dim=-1)
+
+            return log_pdf if not mixtures else (log_pdf, log_logistic_pdf)
+
+    x0 = binary_search(u_r, lbs.clone(), ubs.clone(), lambda x: log_cdf_pdf_r(x, mode='cdf'), bisection_iter)
+
+    if len(noise) == 0:
+        means_g = x0.unsqueeze(-1) * coeffs[:, :, :, 0, :] + means[..., 1, :]
+    else:
+        means_g = (x0.unsqueeze(-1) + noise[:, :, :, 0].unsqueeze(-1)) * coeffs[:, :, :, 0, :] + means[..., 1, :]
+
+    means_g = means_g.detach() #added, to make autograd sample correct
+    log_scales_g = log_scales[..., 1, :]
+
+    log_p_r, log_p_r_mixtures = log_cdf_pdf_r(x0, mode='pdf', mixtures=True)
+
+
+def mix_logistic_loss(x: torch.Tensor, logits: torch.Tensor):
+    # TODO: Complete this function
+    pass
 
 
 # if __name__ == "__main__":
