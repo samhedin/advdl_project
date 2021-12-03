@@ -4,10 +4,10 @@ In this project, we are going to reproduce some part of the results from the pap
 
 
 * TODO
-**Dec 2, 2021**
-- [ ] Training Stage 1 with no. of ResNet = `5` on KTH Cluster
+*Dec 2, 2021*
+- [ ] Training Stage 1 with no. of ResNet = =5= on KTH Cluster
 
-**Dec 1, 2021**
+*Dec 1, 2021*
 - [ ] Refactor `CNN_helper` for two stages of the model
 - [ ] Do PixelCNN on smooth data, potentially compare with PixelCNN trained on unsmoothed data
 
