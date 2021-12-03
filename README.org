@@ -26,7 +26,7 @@ Original paper's repo: https://github.com/chenlin9/Autoregressive-Modeling-with-
 Create =~/.ssh/config=
 =conda activate adlenv=
 =/sshx:adlvm:/home/cuong/advdl_project/=
-
+To copy a file: =scp -r adlvm:advdl_project/imgs/ssd.png .=
 * Single step denoising
 ** Notes
 https://github.com/Rayhane-mamah/Tacotron-2/issues/155
