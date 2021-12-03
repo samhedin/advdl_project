@@ -27,7 +27,7 @@ class CNN_helper():
 
         self.model_name = f"stage1_model"
 
-        self.model = PixelCNN(nr_resnet=5, nr_filters=160)
+        self.model = PixelCNN(nr_resnet=3, nr_filters=160)
         # Due to memory constraint, we max out at 3 Resnet, the paper has 5
         if pretrained:
             model_path = "models/" + os.listdir("models")[-1]
@@ -100,18 +100,15 @@ class CNN_helper():
                 torch.save(self.model.state_dict(), f'models/{self.model_name}_{epoch:02d}.pt')
 
     def sample(self, sample_batch_size=1):
-        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
         sample_op = lambda x : sample_from_discretized_mix_logistic(x, self.args.nr_logistic_mix)
         self.model.train(False)
-        self.model.to(device)
 
         data = torch.zeros(sample_batch_size, self.obs[0], self.obs[1], self.obs[2])
-        data.to(device)
+        data.to(self.device)
         for i in range(self.obs[1]):
             for j in range(self.obs[2]):
                 with torch.no_grad():
-                    data_v = Variable(data).to(device)
+                    data_v = Variable(data).to(self.device)
                     out   = self.model(data_v, sample=True)
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
