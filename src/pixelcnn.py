@@ -97,7 +97,7 @@ class CNN_helper():
 
             if (epoch + 1) % self.args.save_interval == 0:
                 print("saving model")
-                torch.save(self.model.state_dict(), f'models/{self.model_name}_{epoch:02d}.pt')
+                torch.save(self.model.state_dict(), f'models/nr_resnet_3/{self.model_name}_{epoch:02d}.pt')
 
     def sample(self, sample_batch_size=1):
         sample_op = lambda x : sample_from_discretized_mix_logistic(x, self.args.nr_logistic_mix)
