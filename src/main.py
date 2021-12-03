@@ -73,19 +73,25 @@ def train_stage1():
     plt.imshow(grid_img.permute(1, 2, 0))
     plt.savefig("imgs/stage1_out.png")
 
+def demonstrate_single_step_denoising(config, args):
+    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
+    helper = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
+    x, x_tilde = single_step_denoising(helper, 4)
+
+    f = plt.figure()
+    a = f.add_subplot(2, 1, 1)
+    a.title.set_text("Before denoising")
+
+    grid_img = tfutils.make_grid(x_tilde.cpu())
+    plt.imshow(grid_img.permute(1, 2, 0))
+
+    a = f.add_subplot(2, 1, 2)
+    a.title.set_text("After single step denoising")
+    grid_img = tfutils.make_grid(x.cpu())
+    plt.imshow(grid_img.permute(1, 2, 0))
+    plt.savefig("imgs/ssd.png")
 
 if __name__ == "__main__":
-    train_stage1()
-    # config = Config()
-    # args = utils.parser()
-    # train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-    # helper = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
-    # x, x_tilde = single_step_denoising(helper, 2)
-
-    # grid_img = tfutils.make_grid(x.cpu())
-    # plt.imshow(grid_img.permute(1, 2, 0))
-    # plt.savefig("imgs/ssd_x.png")
-
-    # grid_img = tfutils.make_grid(x_tilde.cpu())
-    # plt.imshow(grid_img.permute(1, 2, 0))
-    # plt.savefig("imgs/ssd_x_tilde.png")
+    config = Config()
+    args = utils.parser()
+    demonstrate_single_step_denoising(config, args)
