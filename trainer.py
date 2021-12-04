@@ -47,6 +47,7 @@ def parser():
 
 def main(args: argparse.Namespace):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    dataset_cfg 
     model_cfg = {
         "nr_resnet": args.nr_resnet,
         "nr_filters": args.nr_filters,
