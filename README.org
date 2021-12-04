@@ -2,10 +2,22 @@
 
 In this project, we are going to reproduce some part of the results from the paper [[Improved Autoregressive Modeling with Distribution Smoothing][https://arxiv.org/abs/2103.15089]] by Meng et al., ICLR 2021.
 
+* Single-step denoising
+How we are doing this:
+- Train PixeCNN++ with smoothing data (i.e., stage 1), the model learns $p(\tilde(x))$. The origanal PixelCNN++ paper use a =loss_op = discretized_mix_logistic_loss= function, meanwhile the Improve Autogregressive paper uses a slightly modified version call =loss_op = mix_logistic_loss=
+
+- Sample from a trained stage 1 model to get $\tilde(x)$ =[B, 3, 32, 32]=
+- In order to get the gradient of $\tilde(x)$ w.r.t log probability of $p(\tilde(x))$:
+  - We first forward $\tilde(x)$ through the trained stage 1 model to get the logits $v$(i.e., a latent vector representing the mixture of logistic distributions), $v$ is continuous
+  - 
+- In the original Improved Autogregressive paper, the stage 1 is trained with a =loss_op = mix_logistic_loss= which we assume to be continuous. However, when doing sampling, they use =sample_op =sample_from_discretized_mix_logistic=, which we assume to work on discretized mixture of logistics.
 
 * TODO
-*Dec 3, 2021*
-- [ ] Inspect PixelCNN++
+*Dec 4, 2021*
+- [ ] Train PixelCNN++ with smoothed data (Stage 1)
+  - Use the original PixelCNN class
+  - Write our own traiing script
+- [ ] Do single-step denoising on stage 1.
 
 *Dec 2, 2021*
 - [ ] Training Stage 1 with no. of ResNet = =5= on KTH Cluster
