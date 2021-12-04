@@ -53,10 +53,10 @@ torch.manual_seed(args.seed)
 np.random.seed(args.seed)
 
 model_name = 'pcnn_lr:{:.5f}_nr-resnet{}_nr-filters{}'.format(args.lr, args.nr_resnet, args.nr_filters)
-assert not os.path.exists(os.path.join('runs', model_name)), '{} already exists!'.format(model_name)
-writer = SummaryWriter(log_dir=os.path.join('runs', model_name))
+# assert not os.path.exists(os.path.join('runs', model_name)), '{} already exists!'.format(model_name)
+# writer = SummaryWriter(log_dir=os.path.join('runs', model_name))
 
-sample_batch_size = 25
+sample_batch_size = 2
 obs = (1, 28, 28) if 'mnist' in args.dataset else (3, 32, 32)
 input_channels = obs[0]
 rescaling     = lambda x : (x - .5) * 2.
@@ -92,6 +92,7 @@ elif 'cifar' in args.dataset :
     test_loader  = torch.utils.data.DataLoader(datasets.CIFAR10(args.data_dir, train=False, 
                     transform=ds_transforms), batch_size=args.batch_size, shuffle=True, **kwargs)
     
+    # loss_op   = lambda real, fake : discretized_mix_logistic_loss(real, fake)
     loss_op   = lambda real, fake : discretized_mix_logistic_loss(real, fake)
     sample_op = lambda x : sample_from_discretized_mix_logistic(x, args.nr_logistic_mix)
 else:
@@ -128,68 +129,88 @@ def single_step_denoising(model):
     x_tilde = sample(model)
 
     # Log PDF:
+    logits = model(x_tilde).detach()  # logits don't require gradient
     xt_v = Variable(x_tilde, requires_grad=True).to(device)
-    logits = model(xt_v, sample=True)
     log_pdf = mix_logistic_loss(xt_v, logits, likelihood=True)
 
     nabla = autograd.grad(log_pdf.sum(), xt_v, create_graph=True)[0]
-    x = x_tilde + noise * nabla
+    x = x_tilde + noise**2 * nabla
     return x, x_tilde
 
 
-print('starting training')
-writes = 0
-for epoch in range(args.max_epochs):
-    model.train(True)
-    torch.cuda.synchronize()
-    train_loss = 0.
-    time_ = time.time()
-    model.train()
-    for batch_idx, (input,_) in enumerate(train_loader):
-        input = input.cuda(non_blocking=True)
-        input = Variable(input)
-        output = model(input)
-        loss = loss_op(input, output)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        train_loss += loss.item()
-        if (batch_idx +1) % args.print_every == 0 : 
-            deno = args.print_every * args.batch_size * np.prod(obs) * np.log(2.)
-            writer.add_scalar('train/bpd', (train_loss / deno), writes)
-            print('loss : {:.4f}, time : {:.4f}'.format(
-                (train_loss / deno), 
-                (time.time() - time_)))
-            train_loss = 0.
-            writes += 1
-            time_ = time.time()    
+def train():
+    print('starting training')
+    writes = 0
+    for epoch in range(args.max_epochs):
+        model.train(True)
+        torch.cuda.synchronize()
+        train_loss = 0.
+        time_ = time.time()
+        model.train()
+        for batch_idx, (input,_) in enumerate(train_loader):
+            input = input.cuda(non_blocking=True)
+            input = Variable(input)
+            output = model(input)
+            loss = loss_op(input, output)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            train_loss += loss.item()
+            if (batch_idx +1) % args.print_every == 0 : 
+                deno = args.print_every * args.batch_size * np.prod(obs) * np.log(2.)
+                writer.add_scalar('train/bpd', (train_loss / deno), writes)
+                print('loss : {:.4f}, time : {:.4f}'.format(
+                    (train_loss / deno), 
+                    (time.time() - time_)))
+                train_loss = 0.
+                writes += 1
+                time_ = time.time()    
 
-    # decrease learning rate
-    scheduler.step()
-    
-    torch.cuda.synchronize()
-    model.eval()
-    test_loss = 0.
-    for batch_idx, (input,_) in enumerate(test_loader):
-        input = input.cuda(non_blocking=True)
-        input_var = Variable(input)
-        output = model(input_var)
-        loss = loss_op(input_var, output)
-        test_loss += loss.item()
-        del loss, output
+        # decrease learning rate
+        scheduler.step()
+        
+        torch.cuda.synchronize()
+        model.eval()
+        test_loss = 0.
+        for batch_idx, (input,_) in enumerate(test_loader):
+            input = input.cuda(non_blocking=True)
+            input_var = Variable(input)
+            output = model(input_var)
+            loss = loss_op(input_var, output)
+            test_loss += loss.item()
+            del loss, output
 
-    deno = batch_idx * args.batch_size * np.prod(obs) * np.log(2.)
-    writer.add_scalar('test/bpd', (test_loss / deno), writes)
-    print('test loss : %s' % (test_loss / deno))
-    
-    if (epoch + 1) % args.save_interval == 0:
-        torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))
-        print('sampling...')
-        sample_t = sample(model)
-        sample_t = rescaling_inv(sample_t)
-        tutils.save_image(sample_t,'images/{}_{}.png'.format(model_name, epoch), 
-                nrow=5, padding=0)
+        deno = batch_idx * args.batch_size * np.prod(obs) * np.log(2.)
+        writer.add_scalar('test/bpd', (test_loss / deno), writes)
+        print('test loss : %s' % (test_loss / deno))
+        
+        if (epoch + 1) % args.save_interval == 0:
+            torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))
+            print('sampling...')
+            sample_t = sample(model)
+            sample_t = rescaling_inv(sample_t)
+            tutils.save_image(sample_t,'images/{}_{}.png'.format(model_name, epoch), 
+                    nrow=5, padding=0)
 
+        print("Single-step denoising")
+        x, x_tilde = single_step_denoising(model)
+        x = rescaling_inv(x)
+        x_tilde = rescaling_inv(x_tilde)
+
+        f = plt.figure()
+        a = f.add_subplot(2, 1, 1)
+        a.title.set_text("Before denoising")
+
+        grid_img = tutils.make_grid(x_tilde.cpu())
+        plt.imshow(grid_img.permute(1, 2, 0))
+
+        a = f.add_subplot(2, 1, 2)
+        a.title.set_text("After single step denoising")
+        grid_img = tutils.make_grid(x.cpu())
+        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.savefig("images/ssd_{}_{}.png".format(model_name, epoch))
+
+if __name__ == "__main__":
     print("Single-step denoising")
     x, x_tilde = single_step_denoising(model)
     x = rescaling_inv(x)
@@ -206,4 +227,4 @@ for epoch in range(args.max_epochs):
     a.title.set_text("After single step denoising")
     grid_img = tutils.make_grid(x.cpu())
     plt.imshow(grid_img.permute(1, 2, 0))
-    plt.savefig("images/ssd_{}_{}.png".format(model_name, epoch))
+    plt.savefig("images/ssd_{}_{}.png".format(model_name, "test"))
