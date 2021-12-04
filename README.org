@@ -42,6 +42,10 @@ Create =~/.ssh/config=
 =conda activate adlenv=
 =/sshx:adlvm:/home/cuong/advdl_project/=
 To copy a file: =scp -r adlvm:advdl_project/imgs/ssd.png .=
+
+* How to activate conda environment on Cluster
+=conda activate /proj/attention-cpu/users/x_cuoda/.conda/advdl=
+
 * Single step denoising
 ** Notes
 https://github.com/Rayhane-mamah/Tacotron-2/issues/155

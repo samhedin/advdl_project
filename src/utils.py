@@ -242,8 +242,7 @@ def sample_from_discretized_mix_logistic(l, nr_mix):
     return out
 
 
-
-''' utilities for shifting the image around, efficient alternative to masking convolutions '''
+"""utilities for shifting the image around, efficient alternative to masking convolutions"""
 def down_shift(x, pad=None):
     # Pytorch ordering
     xs = [int(y) for y in x.size()]
