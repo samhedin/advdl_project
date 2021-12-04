@@ -2,15 +2,33 @@
 
 In this project, we are going to reproduce some part of the results from the paper [[Improved Autoregressive Modeling with Distribution Smoothing][https://arxiv.org/abs/2103.15089]] by Meng et al., ICLR 2021.
 
+* Single-step denoising
+How we are doing this:
+- Train PixeCNN++ with smoothing data (i.e., stage 1), the model learns $p(\tilde(x))$. The origanal PixelCNN++ paper use a =loss_op = discretized_mix_logistic_loss= function, meanwhile the Improve Autogregressive paper uses a slightly modified version call =loss_op = mix_logistic_loss=
+
+- Sample from a trained stage 1 model to get $\tilde(x)$ =[B, 3, 32, 32]=
+- In order to get the gradient of $\tilde(x)$ w.r.t log probability of $p(\tilde(x))$:
+  - We first forward $\tilde(x)$ through the trained stage 1 model to get the logits $v$(i.e., a latent vector representing the mixture of logistic distributions), $v$ is continuous
+  - 
+- In the original Improved Autogregressive paper, the stage 1 is trained with a =loss_op = mix_logistic_loss= which we assume to be continuous. However, when doing sampling, they use =sample_op =sample_from_discretized_mix_logistic=, which we assume to work on discretized mixture of logistics.
 
 * TODO
-** Dec 1, 2021
+*Dec 4, 2021*
+- [ ] Train PixelCNN++ with smoothed data (Stage 1)
+  - Use the original PixelCNN class
+  - Write our own traiing script
+- [ ] Do single-step denoising on stage 1.
+
+*Dec 2, 2021*
+- [ ] Training Stage 1 with no. of ResNet = =5= on KTH Cluster
+
+*Dec 1, 2021*
 - [ ] Refactor `CNN_helper` for two stages of the model
 - [ ] Do PixelCNN on smooth data, potentially compare with PixelCNN trained on unsmoothed data
 
 - [X] Use MNIST, ACTUALLY USE CIFAR10
 - [X] Make function to convolve an image with gaussian noise
-  - [X] Can we try this type of convonlution instead? https://scipy-lectures.org/intro/scipy/auto_examples/solutions/plot_image_blur.html
+  - [X] (NO, we don't need) Can we try this type of convonlution instead? https://scipy-lectures.org/intro/scipy/auto_examples/solutions/plot_image_blur.html
 
 * Random thoughts
 - [ ] Read about PixelCNN++. Can we use pre-trained weights?
@@ -23,7 +41,7 @@ Original paper's repo: https://github.com/chenlin9/Autoregressive-Modeling-with-
 Create =~/.ssh/config=
 =conda activate adlenv=
 =/sshx:adlvm:/home/cuong/advdl_project/=
-
+To copy a file: =scp -r adlvm:advdl_project/imgs/ssd.png .=
 * Single step denoising
 ** Notes
 https://github.com/Rayhane-mamah/Tacotron-2/issues/155

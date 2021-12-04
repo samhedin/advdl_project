@@ -18,31 +18,37 @@ import numpy as np
 
 
 class CNN_helper():
-    def __init__(self, args, train_loader, test_loader, pretrained=False, stage=1):
+    def __init__(self, args, train_loader, test_loader, pretrained=True):
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.args = args
         self.train_loader = train_loader
         self.test_loader = test_loader
         self.obs = (3, 32, 32)
 
-        self.model_name = f'pcnn_lr_{self.args.lr:.5f}_nr-resnet_{self.args.nr_resnet}_nr-filters_{self.args.nr_filters}_stage_{stage}'#
-        # Due to memory constraint, we max out at 3 Resnet, the paper has 5
+        self.model_name = f"stage1_model"
+
         self.model = PixelCNN(nr_resnet=3, nr_filters=160)
-        self.model.to(self.device)
+        # Due to memory constraint, we max out at 3 Resnet, the paper has 5
         if pretrained:
-            pixelcnnpp_pretrained = "pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth"
-            utils.load_part_of_model(self.model, pixelcnnpp_pretrained)
+            model_path = "models/" + os.listdir("models")[-1]
+            self.model.load_state_dict(torch.load(model_path))
+            print(f"Loading model from {model_path}")
+
+            # This lets us resume training from an earlier epoch,
+            # and upon subsequent saves we won't overwrite previously saved epochs.
+            self.starting_epoch = int(model_path[20:22])
+        else:
+            self.starting_epoch = 0
+        self.model.to(self.device)
 
     def train(self):
-        rescaling_inv = lambda x : .5 * x  + .5
         writer = SummaryWriter(log_dir=os.path.join('runs', self.model_name))
         loss_op   = lambda real, fake : discretized_mix_logistic_loss(real, fake, self.args)
         optimizer = optim.Adam(self.model.parameters(), lr=self.args.lr)
         scheduler = lr_scheduler.StepLR(optimizer, step_size=1, gamma=self.args.lr_decay)
 
-        print('starting training')
         writes = 0
-        for epoch in range(self.args.max_epochs):
+        for epoch in range(self.starting_epoch + 1, self.args.max_epochs + self.starting_epoch + 1):
             print(f"epoch: {epoch}")
             self.model.train(True)
             if self.args.cuda == 1:
@@ -73,8 +79,7 @@ class CNN_helper():
             # decrease learning rate
             scheduler.step()
 
-            if self.args.cuda == 1:
-                torch.cuda.synchronize()
+            torch.cuda.synchronize()
             self.model.eval()
             test_loss = 0.
             for batch_idx, (x,_) in enumerate(self.test_loader):
@@ -91,27 +96,19 @@ class CNN_helper():
                 print('test loss : %s' % (test_loss / deno))
 
             if (epoch + 1) % self.args.save_interval == 0:
-                print("saving image")
-                torch.save(self.model.state_dict(), f'models/{self.model_name}_{epoch}.pth')
-                print('sampling...')
-                sample_t = self.sample()
-                sample_t = rescaling_inv(sample_t)
-                save_image(sample_t,'imgs/{}_{}.png'.format(self.model_name, epoch),
-                        nrow=5, padding=0)
+                print("saving model")
+                torch.save(self.model.state_dict(), f'models/nr_resnet_3/{self.model_name}_{epoch:02d}.pt')
 
     def sample(self, sample_batch_size=1):
-        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
         sample_op = lambda x : sample_from_discretized_mix_logistic(x, self.args.nr_logistic_mix)
         self.model.train(False)
-        self.model.to(device)
 
         data = torch.zeros(sample_batch_size, self.obs[0], self.obs[1], self.obs[2])
-        data.to(device)
+        data.to(self.device)
         for i in range(self.obs[1]):
             for j in range(self.obs[2]):
                 with torch.no_grad():
-                    data_v = Variable(data).to(device)
+                    data_v = Variable(data).to(self.device)
                     out   = self.model(data_v, sample=True)
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
@@ -339,6 +336,7 @@ class PixelCNN(nn.Module):
 
         return x_out
 
+
 def sample_from_discretized_mix_logistic_inverse_CDF(x, model, nr_mix, noise=[], u=None, clamp=True, bisection_iter=15, T=1):
     # Pytorch ordering
     l = model(x)
@@ -410,31 +408,3 @@ def sample_from_discretized_mix_logistic_inverse_CDF(x, model, nr_mix, noise=[],
     log_scales_g = log_scales[..., 1, :]
 
     log_p_r, log_p_r_mixtures = log_cdf_pdf_r(x0, mode='pdf', mixtures=True)
-
-
-def mix_logistic_loss(x: torch.Tensor, logits: torch.Tensor):
-    # TODO: Complete this function
-    pass
-
-
-# if __name__ == "__main__":
-#     """testing loss with tf version"""
-#     np.random.seed(1)
-# xx_t = (np.random.rand(15, 32, 32, 100) * 3).astype("float32")
-#     yy_t = np.random.uniform(-1, 1, size=(15, 32, 32, 3)).astype("float32")
-#     x_t = Variable(torch.from_numpy(xx_t)).cuda()
-#     y_t = Variable(torch.from_numpy(yy_t)).cuda()
-#     loss = discretized_mix_logistic_loss(y_t, x_t)
-
-#     """ testing self.model and deconv dimensions """
-#     x = torch.cuda.FloatTensor(32, 3, 32, 32).uniform_(-1.0, 1.0)
-#     xv = Variable(x).cpu()
-#     ds = down_shifted_deconv2d(3, 40, stride=(2, 2))
-#     x_v = Variable(x)
-
-#     """ testing loss compatibility """
-#     self.model = PixelCNN(nr_resnet=3, nr_filters=100, input_channels=x.size(1))
-#     self.model = self.model.cuda()
-#     out = self.model(x_v)
-#     loss = discretized_mix_logistic_loss(x_v, out)
-#     print("loss : %s" % loss.data[0])

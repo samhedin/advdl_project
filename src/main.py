@@ -22,7 +22,6 @@ class Config:
 
 
 def showimg(image, filepath=None):
-    image = np.array(image)
     print(image.shape)
     image = np.transpose(image, (1,2,0))
     plt.imshow(image)
@@ -48,8 +47,7 @@ def show_image(train_loader):
 def save_sample_grid(cnn_helper):
     sample = cnn_helper.sample(sample_batch_size=2)
 
-    rescaling_inv = lambda x : .5 * x  + .5
-    sample = rescaling_inv(sample)
+    sample = utils.rescaling_inv(sample)
     grid_img = tfutils.make_grid(sample)
     plt.imshow(grid_img.permute(1, 2, 0))
     plt.savefig("imgs/sample.png")
@@ -58,69 +56,42 @@ def save_sample_grid(cnn_helper):
 def rescaling_inv(x):
     return .5 * x  + .5
 
-# Compare how it is to generate images from pixelcnn
-# trained on smooth vs trained on non-smooth data.
-# We won't use this code in the end experiment, but it's a good way to confirm that we're on the right track.
-def compare_smooth_and_unsmooth(try_smooth=False):
+
+def train_stage1():
+    """
+    Stage 1 Training: Learning the smooth distribution
+    """
+    config = Config()
     args = utils.parser()
-
-    if try_smooth:
-        train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-        smooth_model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
-        # smooth_model.train()
-        sample = smooth_model.sample(sample_batch_size=2)
-
-        sample = rescaling_inv(sample)
-        grid_img = tfutils.make_grid(sample)
-        plt.imshow(grid_img.permute(1, 2, 0))
-
-        plt.savefig("imgs/smooth.png")
-    else:
-        train_loader_regular, test_loader_regular = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=False)
-        unsmooth_model = pixelcnn.CNN_helper(args, train_loader_regular, test_loader_regular, stage=False, pretrained=True)
-        # unsmooth_model.train()
-        sample = unsmooth_model.sample(sample_batch_size=2)
-        sample = rescaling_inv(sample)
-        grid_img = tfutils.make_grid(sample)
-        plt.imshow(grid_img.permute(1, 2, 0))
-        plt.savefig("imgs/unsmooth.png")
-
-
-# stage 1 takes in smooth data and trains it against a smooth output.
-def train_stage_1(config, args):
     train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1)
+    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=False)
     model.train()
-    samples = rescaling_inv(model.sample(sample_batch_size=10))
-    for i, s in enumerate(samples):
-        showimg(s, filepath=f"imgs/stage_1_out/epoch_{args.max_epochs}_{i}.png")
-    print(f"model name: {model.model_name}")
 
+    sample = model.sample(sample_batch_size=2)
+    sample = utils.rescaling_inv(sample)
+    grid_img = tfutils.make_grid(sample)
+    plt.imshow(grid_img.permute(1, 2, 0))
+    plt.savefig("imgs/stage1_out.png")
 
-def test_single_step_denoising(args):
+def demonstrate_single_step_denoising(config, args):
     train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-    helper_module = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, stage=1, pretrained=False)
+    helper = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
+    x, x_tilde = single_step_denoising(helper, 4)
 
-    x = single_step_denoising(helper_module, obs=helper_module.obs)
-    # sample = rescaling_inv(x)
-    # grid_img = tfutils.make_grid(sample)
-    # plt.imshow(grid_img.permute(1, 2, 0))
+    f = plt.figure()
+    a = f.add_subplot(2, 1, 1)
+    a.title.set_text("Before denoising")
 
-    # plt.savefig("imgs/ssd1.png")
+    grid_img = tfutils.make_grid(x_tilde.cpu())
+    plt.imshow(grid_img.permute(1, 2, 0))
 
-    # move x to all positive
-    img = x.detach().cpu().numpy()[0]
-    img = img.transpose(2, 1, 0)
-    img += np.abs(img.min())
-    # Rescale img to 0 - 1
-    img = img * 1. / img.max()
-    plt.imsave("imgs/ssd1.png", img)
-    import pdb; pdb.set_trace()
-
+    a = f.add_subplot(2, 1, 2)
+    a.title.set_text("After single step denoising")
+    grid_img = tfutils.make_grid(x.cpu())
+    plt.imshow(grid_img.permute(1, 2, 0))
+    plt.savefig("imgs/ssd.png")
 
 if __name__ == "__main__":
     config = Config()
     args = utils.parser()
-    # train_stage_1(config, args)
-    # compare_smooth_and_unsmooth()
-    test_single_step_denoising(args)
+    demonstrate_single_step_denoising(config, args)

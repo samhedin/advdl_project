@@ -16,3 +16,7 @@ data/*
 
 pretrained/
 runs/
+logs/
+models
+/src/pixelcnn/data/*
+/src/pixelcnn/images/*

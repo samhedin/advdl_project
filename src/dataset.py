@@ -19,8 +19,13 @@ def smooth(image, noise=0.1, proper_convolution=False):
         # or: https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter.html
         return gaussian_filter(image, sigma=1.2)
 
-def build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=False) -> Any:
-    training_transform = pth_transforms.Compose([pth_transforms.ToTensor(), lambda img: smooth(img, noise, proper_convolution)])
+def build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=False, grayscale = False) -> Any:
+    transforms = [pth_transforms.ToTensor()]
+    if smooth_output:
+        transforms.append(lambda img: smooth(img, noise, proper_convolution))
+    if grayscale:
+        transforms.append(pth_transforms.Grayscale(num_output_channels=1))
+    training_transform = pth_transforms.Compose(transforms)
 
     #the test data should sometimes be smooth, and sometimes regular.
     test_transform = pth_transforms.Compose([pth_transforms.ToTensor()]) if not smooth_output else training_transform
@@ -28,20 +33,20 @@ def build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=Fal
     if config.dataset == "MNIST":
         train_loader = DataLoader(
             datasets.MNIST(config.data_root, train=True, transform=training_transform, download=True),
-            batch_size=config.batch_size, shuffle=True, num_workers=4, pin_memory=True
+            batch_size=config.batch_size, shuffle=True, num_workers=1, pin_memory=True
         )
         test_loader = DataLoader(
             datasets.MNIST(config.data_root, train=False, transform=test_transform, download=True),
-            batch_size=config.batch_size, shuffle=True, num_workers=4, pin_memory=True
+            batch_size=config.batch_size, shuffle=True, num_workers=1, pin_memory=True
         )
     else:
         train_loader = DataLoader(
             datasets.CIFAR10(config.data_root, train=True, transform=training_transform, download=True),
-            batch_size=config.batch_size, shuffle=True, num_workers=4, pin_memory=True
+            batch_size=config.batch_size, shuffle=True, num_workers=1, pin_memory=True
         )
         test_loader = DataLoader(
             datasets.CIFAR10(config.data_root, train=False, transform=test_transform, download=True),
-            batch_size=config.batch_size, shuffle=True, num_workers=4, pin_memory=True
+            batch_size=config.batch_size, shuffle=True, num_workers=1, pin_memory=True
         )
     
     return train_loader, test_loader
