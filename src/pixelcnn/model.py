@@ -132,7 +132,6 @@ class PixelCNN(nn.Module):
                 ul_list += [self.downsize_ul_stream[i](ul_list[-1])]
         # u_list length 18
         # ul_list length 18
-        pdb.set_trace()
 
         ###    DOWN PASS    ###
         u  = u_list.pop()  # [B, 160, 32, 32]
@@ -146,10 +145,8 @@ class PixelCNN(nn.Module):
             if i != 2 :
                 u  = self.upsize_u_stream[i](u)
                 ul = self.upsize_ul_stream[i](ul)
-        pdb.set_trace()
 
         x_out = self.nin_out(F.elu(ul))
-        pdb.set_trace()
 
         assert len(u_list) == len(ul_list) == 0, pdb.set_trace()
 

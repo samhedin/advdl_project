@@ -4,14 +4,16 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import autograd
 import torch.optim as optim
 from torch.optim import lr_scheduler
-from torchvision import datasets, transforms, utils
+from torchvision import datasets, transforms
 from tensorboardX import SummaryWriter
+from torchvision import utils as tutils
 from utils import * 
 from model import * 
 from PIL import Image
-import time
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
 # data I/O
@@ -60,7 +62,17 @@ input_channels = obs[0]
 rescaling     = lambda x : (x - .5) * 2.
 rescaling_inv = lambda x : .5 * x  + .5
 kwargs = {'num_workers':1, 'pin_memory':True, 'drop_last':True}
-ds_transforms = transforms.Compose([transforms.ToTensor(), rescaling])
+noise = 0.1
+
+def smooth(image):
+    """Smooth input image by adding gaussian noise and rescale its values betwen [-1, 1]"""
+    image = image + torch.randn_like(image) * noise
+    image = 2 * (image - image.min()) / (image.max() - image.min()) - 1
+    return image
+
+
+smooth_op = lambda image: smooth(image)
+ds_transforms = transforms.Compose([transforms.ToTensor(), smooth_op])
 
 if 'mnist' in args.dataset : 
     train_loader = torch.utils.data.DataLoader(datasets.MNIST(args.data_dir, download=True, 
@@ -82,7 +94,7 @@ elif 'cifar' in args.dataset :
     
     loss_op   = lambda real, fake : discretized_mix_logistic_loss(real, fake)
     sample_op = lambda x : sample_from_discretized_mix_logistic(x, args.nr_logistic_mix)
-else :
+else:
     raise Exception('{} dataset not in {mnist, cifar10}'.format(args.dataset))
 
 model = PixelCNN(nr_resnet=args.nr_resnet, nr_filters=args.nr_filters, 
@@ -110,10 +122,23 @@ def sample(model):
                 data[:, :, i, j] = out_sample.data[:, :, i, j]
     return data
 
+def single_step_denoising(model):
+    device = torch.device("cuda")
+    # First, sample to get x tilde
+    x_tilde = sample(model)
+
+    # Log PDF:
+    xt_v = Variable(x_tilde, requires_grad=True).to(device)
+    logits = model(xt_v, sample=True)
+    log_pdf = mix_logistic_loss(xt_v, logits, likelihood=True)
+
+    nabla = autograd.grad(log_pdf.sum(), xt_v, create_graph=True)[0]
+    x = x_tilde + noise * nabla
+    return x, x_tilde
+
+
 print('starting training')
 writes = 0
-epoch_start = time.time()
-
 for epoch in range(args.max_epochs):
     model.train(True)
     torch.cuda.synchronize()
@@ -137,11 +162,7 @@ for epoch in range(args.max_epochs):
                 (time.time() - time_)))
             train_loss = 0.
             writes += 1
-            time_ = time.time()
-
-    epoch_end = time.time()
-    epoch_time = epoch_end - epoch_start
-    print(f"Epoch: {epoch}; Time spent: {epoch_time} secs")     
+            time_ = time.time()    
 
     # decrease learning rate
     scheduler.step()
@@ -166,5 +187,23 @@ for epoch in range(args.max_epochs):
         print('sampling...')
         sample_t = sample(model)
         sample_t = rescaling_inv(sample_t)
-        utils.save_image(sample_t,'images/{}_{}.png'.format(model_name, epoch), 
+        tutils.save_image(sample_t,'images/{}_{}.png'.format(model_name, epoch), 
                 nrow=5, padding=0)
+
+    print("Single-step denoising")
+    x, x_tilde = single_step_denoising(model)
+    x = rescaling_inv(x)
+    x_tilde = rescaling_inv(x_tilde)
+
+    f = plt.figure()
+    a = f.add_subplot(2, 1, 1)
+    a.title.set_text("Before denoising")
+
+    grid_img = tutils.make_grid(x_tilde.cpu())
+    plt.imshow(grid_img.permute(1, 2, 0))
+
+    a = f.add_subplot(2, 1, 2)
+    a.title.set_text("After single step denoising")
+    grid_img = tutils.make_grid(x.cpu())
+    plt.imshow(grid_img.permute(1, 2, 0))
+    plt.savefig("images/ssd_{}_{}.png".format(model_name, epoch))
