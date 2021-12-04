@@ -103,10 +103,11 @@ def sample(model):
     data = data.cuda()
     for i in range(obs[1]):
         for j in range(obs[2]):
-            data_v = Variable(data, volatile=True)
-            out   = model(data_v, sample=True)
-            out_sample = sample_op(out)
-            data[:, :, i, j] = out_sample.data[:, :, i, j]
+            with torch.no_grad():
+                data_v = Variable(data)
+                out   = model(data_v, sample=True)
+                out_sample = sample_op(out)
+                data[:, :, i, j] = out_sample.data[:, :, i, j]
     return data
 
 print('starting training')
