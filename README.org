@@ -4,6 +4,9 @@ In this project, we are going to reproduce some part of the results from the pap
 
 
 * TODO
+*Dec 3, 2021*
+- [ ] Inspect PixelCNN++
+
 *Dec 2, 2021*
 - [ ] Training Stage 1 with no. of ResNet = =5= on KTH Cluster
 
@@ -13,7 +16,7 @@ In this project, we are going to reproduce some part of the results from the pap
 
 - [X] Use MNIST, ACTUALLY USE CIFAR10
 - [X] Make function to convolve an image with gaussian noise
-  - [X] Can we try this type of convonlution instead? https://scipy-lectures.org/intro/scipy/auto_examples/solutions/plot_image_blur.html
+  - [X] (NO, we don't need) Can we try this type of convonlution instead? https://scipy-lectures.org/intro/scipy/auto_examples/solutions/plot_image_blur.html
 
 * Random thoughts
 - [ ] Read about PixelCNN++. Can we use pre-trained weights?
