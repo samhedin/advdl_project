@@ -12,9 +12,12 @@ def scale_img(img):
     img = 2 * (img - img.min()) / (img.max() - img.min()) - 1
     return img
 
+rescaling = lambda x: (x - .5) * 2.
+
 
 def build_dataset(data_root=None, batch_size=None, grayscale = False) -> Any:
-    transforms = [pth_transforms.ToTensor(), lambda img: scale_img(img)]
+    # transforms = [pth_transforms.ToTensor(), lambda img: scale_img(img)]
+    transforms = [pth_transforms.ToTensor(), rescaling]
     if grayscale:
         transforms.append(pth_transforms.Grayscale(num_output_channels=1))
     training_transform = pth_transforms.Compose(transforms)

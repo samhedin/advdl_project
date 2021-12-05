@@ -9,10 +9,12 @@ import torch.autograd as autograd
 
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
-from timm.models.layers import trunc_normal_
 
-from src.pixelcnn.model import PixelCNN
-from src.pixelcnn.utils import discretized_mix_logistic_loss, mix_logistic_loss, sample_from_discretized_mix_logistic
+from src.pixelcnn.model import PixelCNN, mix_logistic_loss
+from src.pixelcnn.utils import (
+    discretized_mix_logistic_loss,
+    sample_from_discretized_mix_logistic,
+)
 
 
 class SmoothPixelCNNModule(pl.LightningModule):
@@ -22,13 +24,14 @@ class SmoothPixelCNNModule(pl.LightningModule):
         nr_filters: Optional[int] = 160,
         nr_logistic_mix: Optional[int] = 10,
         input_channels: Optional[int] = 3,
+        noise: Optional[float] = None,
         lr: Optional[float] = 0.0002,
         lr_decay: Optional[float] = 0.9995,
         pretrained_weights: Optional[str] = None,
         device: Optional[Any] = torch.device("cpu"),
         sample_batch_size: Optional[int] = 2,
         image_dim: Optional[Any] = (3, 32, 32),
-        loss_type: Optional[str] = "continous"
+        loss_type: Optional[str] = "continous",
     ) -> None:
         super().__init__()
 
@@ -46,6 +49,7 @@ class SmoothPixelCNNModule(pl.LightningModule):
         # Load pretrained weights if available
         if self.hparams.pretrained_weights is not None:
             self._load_model_pretrained(self.model, self.hparams.pretrained_weights)
+            print(f"PixelCNN++ weights loaded from {self.hparams.pretrained_weights}")
 
         if loss_type == "continuous":
             self.criterion = mix_logistic_loss
@@ -65,9 +69,11 @@ class SmoothPixelCNNModule(pl.LightningModule):
 
     def step(self, batch) -> Any:
         input, _ = batch
-        input_v = autograd.Variable(input)
-        output = self.forward(input_v)
-        loss = self.criterion(input_v, output)
+        # Add noise to the input
+        if self.hparams.noise:
+            input = input + torch.rand_like(input) * self.hparams.noise
+        output = self.forward(input)
+        loss = self.criterion(input, output)
         return loss, output
 
     def sample(self, sample_batch_size=None):
@@ -78,9 +84,9 @@ class SmoothPixelCNNModule(pl.LightningModule):
         data = torch.zeros(sample_batch_size, C, H, W)
         data.to(self.device)
 
-        for i in range(H):
-            for j in range(W):
-                with torch.no_grad():
+        with torch.no_grad():
+            for i in range(H):
+                for j in range(W):
                     data_v = autograd.Variable(data).to(self.device)
                     out = self.model(data_v, sample=True)
                     out_sample = self.sample_op(out, self.hparams.nr_logistic_mix)
