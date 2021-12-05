@@ -4,7 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from src.pixelcnn.layers import * 
+# from layers import * 
 from src.pixelcnn.utils import * 
+# from utils import * 
 import numpy as np
 
 class PixelCNNLayer_up(nn.Module):
