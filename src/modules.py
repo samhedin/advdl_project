@@ -3,13 +3,13 @@
 from typing import Any, Optional
 
 import torch
+import torch.nn as nn
 import torch.optim as optim
 import torch.autograd as autograd
 
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.types import STEP_OUTPUT
-
-pl.seed_everything(42)
+from timm.models.layers import trunc_normal_
 
 from src.pixelcnn.model import PixelCNN
 from src.pixelcnn.utils import mix_logistic_loss, sample_from_discretized_mix_logistic
@@ -42,11 +42,24 @@ class SmoothPixelCNNModule(pl.LightningModule):
         self.to(device)
         self.model.to(self.hparams.device)
 
+        # Load pretrained weights if available
         if self.hparams.pretrained_weights is not None:
             self._load_model_pretrained(self.model, self.hparams.pretrained_weights)
+        else:  # otherwise init weights
+            # self.model.apply(self._init_weights)
+            pass
 
         self.criterion = mix_logistic_loss
         self.sample_op = sample_from_discretized_mix_logistic
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            trunc_normal_(m.weight, std=0.01)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
 
     def _load_model_pretrained(self, model, pretrained_weights):
         ckpt = torch.load(pretrained_weights)
@@ -56,9 +69,10 @@ class SmoothPixelCNNModule(pl.LightningModule):
         return self.model(x)
 
     def step(self, batch) -> Any:
-        input = batch
-        output = self.forward(input)
-        loss = self.criterion(input, output)
+        input, _ = batch
+        input_v = autograd.Variable(input)
+        output = self.forward(input_v)
+        loss = self.criterion(input_v, output)
         return loss, output
 
     def sample(self, sample_batch_size=None):
@@ -87,7 +101,7 @@ class SmoothPixelCNNModule(pl.LightningModule):
     def validation_step(self, batch: Any, batch_idx: int) -> Optional[STEP_OUTPUT]:
         loss, _ = self.step(batch)
 
-        self.log("val/loss", loss, on_step=True, on_epoch=True)
+        self.log("val/loss", loss, on_step=False, on_epoch=True)
         return {"loss": loss}
 
     def configure_optimizers(self):

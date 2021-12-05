@@ -1,18 +1,22 @@
 import argparse
+from pytorch_lightning import callbacks
 
 import torch
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
+pl.seed_everything(1)
 
+from src.dataset import build_dataset
 from src.modules import SmoothPixelCNNModule
 
 
 def parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--data_dir', type=str,
+    parser.add_argument('-i', '--data_root', type=str,
                         default='data', help='Location for the dataset')
     parser.add_argument('-o', '--save_dir', type=str, default='models',
                         help='Location for parameter checkpoints and samples')
-    parser.add_arguent('-d', '--dataset', type=str,
+    parser.add_argument('-d', '--dataset', type=str,
                         default='cifar', help='Can be either cifar|mnist')
     parser.add_argument('-p', '--print_every', type=int, default=50,
                         help='how many iterations between print statements')
@@ -37,17 +41,25 @@ def parser():
     parser.add_argument('-b', '--batch_size', type=int, default=64,
                         help='Batch size during training per GPU')
     parser.add_argument('-x', '--max_epochs', type=int,
-                        default=100, help='How many epochs to run in total?')
-    parser.add_argument('-s', '--seed', type=int, default=1,
-                        help='Random seed to use')
-    parser.add_argument('-c', '--cuda', type=int, default=1,
-                            help='Use CUDA?')
+                        default=1000, help='How many epochs to run in total?')
+    parser.add_argument('-g', '--noise', type=float, default=0.5,
+                        help='Sigma (noise) to add to data')
     return parser.parse_args()
 
 
 def main(args: argparse.Namespace):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    dataset_cfg 
+    print("Building dataset...")
+    dataset_cfg = {
+        "data_root": args.data_root,
+        "batch_size": args.batch_size,
+        "noise": args.noise,
+        "smooth_data": args.smooth,
+    }
+    print("Dataset config", dataset_cfg)
+    train_loader, test_loader = build_dataset(**dataset_cfg)
+
+    print("Building model...")
     model_cfg = {
         "nr_resnet": args.nr_resnet,
         "nr_filters": args.nr_filters,
@@ -59,6 +71,20 @@ def main(args: argparse.Namespace):
     }
     print("Model config", model_cfg)
     smooth_module = SmoothPixelCNNModule(**model_cfg)
+
+    # Setup Lightning callbacks
+    lr_callback = LearningRateMonitor(logging_interval="epoch")
+    ckpt_callback = ModelCheckpoint(verbose=True, every_n_epochs=10)
+    gpus = 1 if torch.cuda.is_available() else None
+
+    trainer = pl.Trainer(
+        gpus=1,
+        max_epochs=args.max_epochs,
+        callbacks=[ckpt_callback, lr_callback]
+    )
+
+    print("Start training")
+    trainer.fit(smooth_module, train_loader, test_loader)
 
 
 if __name__ == "__main__":
