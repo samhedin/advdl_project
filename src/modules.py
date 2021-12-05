@@ -8,11 +8,11 @@ import torch.optim as optim
 import torch.autograd as autograd
 
 import pytorch_lightning as pl
-from pytorch_lightning.utilities.types import STEP_OUTPUT
+from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 from timm.models.layers import trunc_normal_
 
 from src.pixelcnn.model import PixelCNN
-from src.pixelcnn.utils import mix_logistic_loss, sample_from_discretized_mix_logistic
+from src.pixelcnn.utils import discretized_mix_logistic_loss, mix_logistic_loss, sample_from_discretized_mix_logistic
 
 
 class SmoothPixelCNNModule(pl.LightningModule):
@@ -28,6 +28,7 @@ class SmoothPixelCNNModule(pl.LightningModule):
         device: Optional[Any] = torch.device("cpu"),
         sample_batch_size: Optional[int] = 2,
         image_dim: Optional[Any] = (3, 32, 32),
+        loss_type: Optional[str] = "continous"
     ) -> None:
         super().__init__()
 
@@ -45,21 +46,15 @@ class SmoothPixelCNNModule(pl.LightningModule):
         # Load pretrained weights if available
         if self.hparams.pretrained_weights is not None:
             self._load_model_pretrained(self.model, self.hparams.pretrained_weights)
-        else:  # otherwise init weights
-            # self.model.apply(self._init_weights)
-            pass
 
-        self.criterion = mix_logistic_loss
+        if loss_type == "continuous":
+            self.criterion = mix_logistic_loss
+        elif loss_type == "discretize":
+            self.criterion = discretized_mix_logistic_loss
+        else:
+            raise ValueError("Unsupported loss type " + loss_type)
+
         self.sample_op = sample_from_discretized_mix_logistic
-
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=0.01)
-            if isinstance(m, nn.Linear) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
 
     def _load_model_pretrained(self, model, pretrained_weights):
         ckpt = torch.load(pretrained_weights)

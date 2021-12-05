@@ -44,6 +44,7 @@ def parser():
                         default=1000, help='How many epochs to run in total?')
     parser.add_argument('-g', '--noise', type=float, default=0.5,
                         help='Sigma (noise) to add to data')
+    parser.add_argument('--loss_type', type=str, default='continuous')
     return parser.parse_args()
 
 
@@ -67,7 +68,8 @@ def main(args: argparse.Namespace):
         "lr": args.lr,
         "lr_decay": args.lr_decay,
         "device": device,
-        "sample_batch_size": 25
+        "sample_batch_size": 25,
+        "loss_type": args.loss_type,
     }
     print("Model config", model_cfg)
     smooth_module = SmoothPixelCNNModule(**model_cfg)

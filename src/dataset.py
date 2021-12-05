@@ -12,21 +12,9 @@ def scale_img(img):
     img = 2 * (img - img.min()) / (img.max() - img.min()) - 1
     return img
 
-# noise 0.5 taken from original paper.
-def smooth(image, noise=0.5):
-    # Returns a tensor with the same size as input that is filled
-    # with random numbers from a normal distribution with mean 0 and variance 1.
-    return image + torch.randn_like(image) * noise
 
-
-def smooth_and_rescale(img, noise):
-    return scale_img(smooth(img, noise))
-
-
-def build_dataset(data_root=None, batch_size=None, noise=0.5, smooth_data=True, grayscale = False) -> Any:
-    transforms = [pth_transforms.ToTensor()]
-    if smooth_data:
-        transforms.append(lambda img: smooth_and_rescale(img, noise))
+def build_dataset(data_root=None, batch_size=None, grayscale = False) -> Any:
+    transforms = [pth_transforms.ToTensor(), lambda img: scale_img(img)]
     if grayscale:
         transforms.append(pth_transforms.Grayscale(num_output_channels=1))
     training_transform = pth_transforms.Compose(transforms)
@@ -37,11 +25,11 @@ def build_dataset(data_root=None, batch_size=None, noise=0.5, smooth_data=True, 
 
     train_loader = DataLoader(
         datasets.CIFAR10(data_root, train=True, transform=training_transform, download=True),
-        batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True
+        batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=True
     )
     test_loader = DataLoader(
         datasets.CIFAR10(data_root, train=False, transform=test_transform, download=True),
-        batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True
+        batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, drop_last=True
     )
     
     return train_loader, test_loader
