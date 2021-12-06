@@ -62,7 +62,7 @@ input_channels = obs[0]
 rescaling     = lambda x : (x - .5) * 2.
 rescaling_inv = lambda x : .5 * x  + .5
 kwargs = {'num_workers':1, 'pin_memory':True, 'drop_last':True}
-noise = 0.1
+noise = 0.3
 
 def smooth(image):
     """Smooth input image by adding gaussian noise and rescale its values betwen [-1, 1]"""
