@@ -23,7 +23,7 @@ class Config:
 
 def showimg(image, filepath=None):
     print(image.shape)
-    image = np.transpose(image, (1,2,0))
+    image = np.transpose(image, (1, 2, 0))
     plt.imshow(image)
     if filepath:
         plt.savefig(filepath)
@@ -44,6 +44,7 @@ def show_image(train_loader):
         showimg(after_img_conv, filepath="imgs/after_conv.png")
         break
 
+
 def save_sample_grid(cnn_helper):
     sample = cnn_helper.sample(sample_batch_size=2)
 
@@ -54,7 +55,7 @@ def save_sample_grid(cnn_helper):
 
 
 def rescaling_inv(x):
-    return .5 * x  + .5
+    return 0.5 * x + 0.5
 
 
 def train_stage1():
@@ -63,8 +64,12 @@ def train_stage1():
     """
     config = Config()
     args = utils.parser()
-    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-    model = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=False)
+    train_loader_smooth, test_loader_smooth = build_dataset(
+        config, noise=0.1, proper_convolution=False, smooth_output=True
+    )
+    model = pixelcnn.CNN_helper(
+        args, train_loader_smooth, test_loader_smooth, pretrained=False
+    )
     model.train()
 
     sample = model.sample(sample_batch_size=2)
@@ -73,9 +78,14 @@ def train_stage1():
     plt.imshow(grid_img.permute(1, 2, 0))
     plt.savefig("imgs/stage1_out.png")
 
+
 def demonstrate_single_step_denoising(config, args):
-    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
-    helper = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
+    train_loader_smooth, test_loader_smooth = build_dataset(
+        config, noise=0.1, proper_convolution=False, smooth_output=True
+    )
+    helper = pixelcnn.CNN_helper(
+        args, train_loader_smooth, test_loader_smooth, pretrained=True
+    )
     x, x_tilde = single_step_denoising(helper, 4)
 
     f = plt.figure()
@@ -90,6 +100,7 @@ def demonstrate_single_step_denoising(config, args):
     grid_img = tfutils.make_grid(x.cpu())
     plt.imshow(grid_img.permute(1, 2, 0))
     plt.savefig("imgs/ssd.png")
+
 
 if __name__ == "__main__":
     config = Config()

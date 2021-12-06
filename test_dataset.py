@@ -4,6 +4,7 @@ Test suite for dataset
 import pytest
 from src.dataset import build_dataset
 
+
 @pytest.fixture
 def train_loader():
     loader, _ = build_dataset(data_root="./data", batch_size=64, grayscale=False)

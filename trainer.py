@@ -132,8 +132,11 @@ def main(args: argparse.Namespace):
 
     print("Setup wandb logging")
     wandb_cfg = {
-        "project": "advdl", "entity": "erikdao", "save_dir": ".", "job_type": "train",
-        "group": ""
+        "project": "advdl",
+        "entity": "erikdao",
+        "save_dir": ".",
+        "job_type": "train",
+        "group": "",
     }
     wandb.init(project="advdl", entity="erikdao")
     wandb.config.update(args)
@@ -145,8 +148,10 @@ def main(args: argparse.Namespace):
     gpus = 1 if torch.cuda.is_available() else None
 
     trainer = pl.Trainer(
-        gpus=gpus, max_epochs=args.max_epochs, callbacks=[ckpt_callback, lr_callback],
-        loggers=[wandb_logger]
+        gpus=gpus,
+        max_epochs=args.max_epochs,
+        callbacks=[ckpt_callback, lr_callback],
+        loggers=[wandb_logger],
     )
 
     print("Start training")

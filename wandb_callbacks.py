@@ -7,6 +7,9 @@ from pytorch_lightning.loggers import LoggerCollection, WandbLogger
 from pytorch_lightning.trainer import Trainer
 from pytorch_lightning.utilities import rank_zero_only
 
+from src.sampler import single_step_denoising
+from src.utils import rescale_image, rescaling_inv
+
 
 def get_wandb_logger(trainer: Trainer) -> WandbLogger:
     """Safely get Weights & Biases logger from trainer."""
@@ -26,9 +29,10 @@ def get_wandb_logger(trainer: Trainer) -> WandbLogger:
 class LogDebugSample(Callback):
     """Log the debug generated samples"""
 
-    def __init__(self, datamodule: pl.LightningDataModule, n_logs: int = 4) -> None:
+    def __init__(self, n_logs: int = 4, denoising_mode: str = "single-step") -> None:
         super().__init__()
         self.n_logs = n_logs
+        self.denoising_mode = denoising_mode
         self.ready = True
 
     def on_sanity_check_start(
@@ -48,6 +52,14 @@ class LogDebugSample(Callback):
     ) -> None:
         if not self.ready:
             return
-        
-        samples = pl_module.sample(sample_batch_size=5)
-        
+
+        # With single-step denoising, we get both samples from the model and from the denoising step
+        x_bar, x_tilde = None, None
+        if self.denoising_mode == "single-step":
+            x_b, x_t = single_step_denoising(
+                pl_module,
+                pl_module.hparams.sample_batch_size,
+                noise=pl_module.hparams.noise,
+            )
+            x_bar = rescale_image(x_b).cpu().numpy()
+            x_tilde = rescaling_inv(x_t).cpu().numpy()

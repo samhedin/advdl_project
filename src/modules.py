@@ -10,7 +10,7 @@ import torch.autograd as autograd
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT, STEP_OUTPUT
 
-from src.pixelcnn.model import PixelCNN, mix_logistic_loss
+from src.pixelcnn.model import PixelCNN, mix_logistic_loss, sample_from_discretized_mix_logistic_inverse_CDF
 from src.pixelcnn.utils import (
     discretized_mix_logistic_loss,
     sample_from_discretized_mix_logistic,
@@ -59,6 +59,7 @@ class SmoothPixelCNNModule(pl.LightningModule):
             raise ValueError("Unsupported loss type " + loss_type)
 
         self.sample_op = sample_from_discretized_mix_logistic
+        # self.sample_op = sample_from_discretized_mix_logistic_inverse_CDF
 
     def _load_model_pretrained(self, model, pretrained_weights):
         ckpt = torch.load(pretrained_weights)
@@ -68,28 +69,34 @@ class SmoothPixelCNNModule(pl.LightningModule):
         return self.model(x)
 
     def step(self, batch) -> Any:
-        input, _ = batch
+        input_tensor, _ = batch
         # Add noise to the input
         if self.hparams.noise:
-            input = input + torch.rand_like(input) * self.hparams.noise
-        output = self.forward(input)
-        loss = self.criterion(input, output)
+            input_tensor = input_tensor + torch.rand_like(input_tensor) * self.hparams.noise
+        output = self.forward(input_tensor)
+        loss = self.criterion(input_tensor, output)
         return loss, output
 
-    def sample(self, sample_batch_size=None):
+    def sample(self, sample_batch_size=None, data=None):
+        sample_model = self.model
+        sample_model.eval()
+
         C, H, W = self.hparams.image_dim
         if not sample_batch_size:
             sample_batch_size = self.hparams.sample_batch_size
 
-        data = torch.zeros(sample_batch_size, C, H, W)
+        if data is None:
+            data = torch.zeros(sample_batch_size, C, H, W)
+            data = torch.rand_like(data)
         data.to(self.device)
 
         with torch.no_grad():
             for i in range(H):
                 for j in range(W):
                     data_v = autograd.Variable(data).to(self.device)
-                    out = self.model(data_v, sample=True)
+                    out = self.forward(data_v)
                     out_sample = self.sample_op(out, self.hparams.nr_logistic_mix)
+                    # out_sample = self.sample_op(data_v, sample_model, self.hparams.nr_logistic_mix, clamp=False, bisection_iter=20)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
         return data
 

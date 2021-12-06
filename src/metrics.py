@@ -9,8 +9,11 @@ This module contains the code to compute different metrics for generated images
   entropy = -sum(p_i * log(p_i))
 - 
 """
+
+
 def inception_score():
     pass
+
 
 def compute_inception_score():
     """Compute the Inception Score for the generated data"""
