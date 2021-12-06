@@ -74,7 +74,7 @@ def train_stage1():
     plt.savefig("imgs/stage1_out.png")
 
 def demonstrate_single_step_denoising(config, args):
-    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.1, proper_convolution=False, smooth_output=True)
+    train_loader_smooth, test_loader_smooth = build_dataset(config, noise=0.3, proper_convolution=False, smooth_output=True)
     helper = pixelcnn.CNN_helper(args, train_loader_smooth, test_loader_smooth, pretrained=True)
     x, x_tilde = single_step_denoising(helper, 4)
 
