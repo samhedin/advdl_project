@@ -11,7 +11,8 @@ echo "Starting job ${SLURM_JOB_ID} on ${SLURMD_NODENAME}"
 echo "Training Smoothing Model"
 nvidia-smi
 module load Anaconda/2021.05-nsc1
-pushd /proj/attention-cpu/users/x_cuoda/projects/advdl_project
-conda activate advdl
+pushd /proj/attention-cpu/users/x_cuoda/projects/advdl_project/src/pixelcnn
+pwd
+conda activate /proj/attention-cpu/users/x_cuoda/.conda/advdl
 
-python -m src.main -x 1000
+python main.py -x 1000

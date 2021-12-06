@@ -25,7 +25,7 @@ parser.add_argument('-d', '--dataset', type=str,
                     default='cifar', help='Can be either cifar|mnist')
 parser.add_argument('-p', '--print_every', type=int, default=50,
                     help='how many iterations between print statements')
-parser.add_argument('-t', '--save_interval', type=int, default=1, # Original: 10
+parser.add_argument('-t', '--save_interval', type=int, default=5, # Original: 10
                     help='Every how many epochs to write checkpoint/samples?')
 parser.add_argument('-r', '--load_params', type=str, default=None,
                     help='Restore training from previous model checkpoint?')
@@ -43,7 +43,7 @@ parser.add_argument('-e', '--lr_decay', type=float, default=0.999995,
 parser.add_argument('-b', '--batch_size', type=int, default=64,
                     help='Batch size during training per GPU')
 parser.add_argument('-x', '--max_epochs', type=int,
-                    default=5000, help='How many epochs to run in total?')
+                    default=1000, help='How many epochs to run in total?')
 parser.add_argument('-s', '--seed', type=int, default=1,
                     help='Random seed to use')
 args = parser.parse_args()
@@ -52,7 +52,6 @@ args = parser.parse_args()
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
 
-model_name = 'pcnn_lr:{:.5f}_nr-resnet{}_nr-filters{}'.format(args.lr, args.nr_resnet, args.nr_filters)
 # assert not os.path.exists(os.path.join('runs', model_name)), '{} already exists!'.format(model_name)
 # writer = SummaryWriter(log_dir=os.path.join('runs', model_name))
 
@@ -63,6 +62,9 @@ rescaling     = lambda x : (x - .5) * 2.
 rescaling_inv = lambda x : .5 * x  + .5
 kwargs = {'num_workers':4, 'pin_memory':True, 'drop_last':True}
 noise = 0.3
+
+model_name = 'pcnn_lr:{:.5f}_nr-resnet{}_nr-filters{}_noise-{}'.format(args.lr, args.nr_resnet, args.nr_filters, str(noise).replace(".", ""))
+
 
 def smooth(image):
     """Smooth input image by adding gaussian noise and rescale its values betwen [-1, 1]"""
@@ -211,21 +213,21 @@ def train():
         # plt.savefig("images/ssd_{}_{}.png".format(model_name, epoch))
 
 if __name__ == "__main__":
-    # train()
-    print("Single-step denoising")
-    x, x_tilde = single_step_denoising(model)
-    x = rescaling_inv(x)
-    x_tilde = rescaling_inv(x_tilde)
+    train()
+    # print("Single-step denoising")
+    # x, x_tilde = single_step_denoising(model)
+    # x = rescaling_inv(x)
+    # x_tilde = rescaling_inv(x_tilde)
 
-    f = plt.figure()
-    a = f.add_subplot(2, 1, 1)
-    a.title.set_text("Before denoising")
+    # f = plt.figure()
+    # a = f.add_subplot(2, 1, 1)
+    # a.title.set_text("Before denoising")
 
-    grid_img = tutils.make_grid(x_tilde.cpu())
-    plt.imshow(grid_img.permute(1, 2, 0))
+    # grid_img = tutils.make_grid(x_tilde.cpu())
+    # plt.imshow(grid_img.permute(1, 2, 0))
 
-    a = f.add_subplot(2, 1, 2)
-    a.title.set_text("After single step denoising")
-    grid_img = tutils.make_grid(x.cpu())
-    plt.imshow(grid_img.permute(1, 2, 0))
-    plt.savefig("images/ssd_{}_{}.png".format(model_name, "test"))
+    # a = f.add_subplot(2, 1, 2)
+    # a.title.set_text("After single step denoising")
+    # grid_img = tutils.make_grid(x.cpu())
+    # plt.imshow(grid_img.permute(1, 2, 0))
+    # plt.savefig("images/ssd_{}_{}.png".format(model_name, "after_5"))
