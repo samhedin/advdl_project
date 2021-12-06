@@ -61,7 +61,7 @@ obs = (1, 28, 28) if 'mnist' in args.dataset else (3, 32, 32)
 input_channels = obs[0]
 rescaling     = lambda x : (x - .5) * 2.
 rescaling_inv = lambda x : .5 * x  + .5
-kwargs = {'num_workers':1, 'pin_memory':True, 'drop_last':True}
+kwargs = {'num_workers':4, 'pin_memory':True, 'drop_last':True}
 noise = 0.3
 
 def smooth(image):
@@ -118,7 +118,7 @@ def sample(model):
         for j in range(obs[2]):
             with torch.no_grad():
                 data_v = Variable(data)
-                out   = model(data_v, sample=True)
+                out   = model(data_v, sample=True)  # model.forward(data_v, sample=True)
                 out_sample = sample_op(out)
                 data[:, :, i, j] = out_sample.data[:, :, i, j]
     return data
@@ -158,7 +158,7 @@ def train():
             train_loss += loss.item()
             if (batch_idx +1) % args.print_every == 0 : 
                 deno = args.print_every * args.batch_size * np.prod(obs) * np.log(2.)
-                writer.add_scalar('train/bpd', (train_loss / deno), writes)
+                # writer.add_scalar('train/bpd', (train_loss / deno), writes)
                 print('loss : {:.4f}, time : {:.4f}'.format(
                     (train_loss / deno), 
                     (time.time() - time_)))
@@ -181,7 +181,7 @@ def train():
             del loss, output
 
         deno = batch_idx * args.batch_size * np.prod(obs) * np.log(2.)
-        writer.add_scalar('test/bpd', (test_loss / deno), writes)
+        # writer.add_scalar('test/bpd', (test_loss / deno), writes)
         print('test loss : %s' % (test_loss / deno))
         
         if (epoch + 1) % args.save_interval == 0:
@@ -192,25 +192,26 @@ def train():
             tutils.save_image(sample_t,'images/{}_{}.png'.format(model_name, epoch), 
                     nrow=5, padding=0)
 
-        print("Single-step denoising")
-        x, x_tilde = single_step_denoising(model)
-        x = rescaling_inv(x)
-        x_tilde = rescaling_inv(x_tilde)
+        # print("Single-step denoising")
+        # x, x_tilde = single_step_denoising(model)
+        # x = rescaling_inv(x)
+        # x_tilde = rescaling_inv(x_tilde)
 
-        f = plt.figure()
-        a = f.add_subplot(2, 1, 1)
-        a.title.set_text("Before denoising")
+        # f = plt.figure()
+        # a = f.add_subplot(2, 1, 1)
+        # a.title.set_text("Before denoising")
 
-        grid_img = tutils.make_grid(x_tilde.cpu())
-        plt.imshow(grid_img.permute(1, 2, 0))
+        # grid_img = tutils.make_grid(x_tilde.cpu())
+        # plt.imshow(grid_img.permute(1, 2, 0))
 
-        a = f.add_subplot(2, 1, 2)
-        a.title.set_text("After single step denoising")
-        grid_img = tutils.make_grid(x.cpu())
-        plt.imshow(grid_img.permute(1, 2, 0))
-        plt.savefig("images/ssd_{}_{}.png".format(model_name, epoch))
+        # a = f.add_subplot(2, 1, 2)
+        # a.title.set_text("After single step denoising")
+        # grid_img = tutils.make_grid(x.cpu())
+        # plt.imshow(grid_img.permute(1, 2, 0))
+        # plt.savefig("images/ssd_{}_{}.png".format(model_name, epoch))
 
 if __name__ == "__main__":
+    # train()
     print("Single-step denoising")
     x, x_tilde = single_step_denoising(model)
     x = rescaling_inv(x)
