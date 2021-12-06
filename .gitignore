@@ -23,3 +23,6 @@ models
 
 # Pytorch Lightning
 lightning_logs
+
+# pytest
+.pytest_cache

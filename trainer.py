@@ -1,8 +1,10 @@
 import argparse
 
+import wandb
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
+from pytorch_lightning.loggers import WandbLogger
 
 pl.seed_everything(1234)
 
@@ -128,13 +130,23 @@ def main(args: argparse.Namespace):
     print("Model config", model_cfg)
     smooth_module = SmoothPixelCNNModule(**model_cfg)
 
+    print("Setup wandb logging")
+    wandb_cfg = {
+        "project": "advdl", "entity": "erikdao", "save_dir": ".", "job_type": "train",
+        "group": ""
+    }
+    wandb.init(project="advdl", entity="erikdao")
+    wandb.config.update(args)
+    wandb_logger = WandbLogger(**wandb_cfg)
+
     # Setup Lightning callbacks
     lr_callback = LearningRateMonitor(logging_interval="epoch")
     ckpt_callback = ModelCheckpoint(verbose=True, every_n_epochs=1)
     gpus = 1 if torch.cuda.is_available() else None
 
     trainer = pl.Trainer(
-        gpus=gpus, max_epochs=args.max_epochs, callbacks=[ckpt_callback, lr_callback]
+        gpus=gpus, max_epochs=args.max_epochs, callbacks=[ckpt_callback, lr_callback],
+        loggers=[wandb_logger]
     )
 
     print("Start training")

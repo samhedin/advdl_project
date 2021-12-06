@@ -31,7 +31,7 @@ class SmoothPixelCNNModule(pl.LightningModule):
         device: Optional[Any] = torch.device("cpu"),
         sample_batch_size: Optional[int] = 2,
         image_dim: Optional[Any] = (3, 32, 32),
-        loss_type: Optional[str] = "continous",
+        loss_type: Optional[str] = "continuous",
     ) -> None:
         super().__init__()
 
