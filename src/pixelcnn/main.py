@@ -131,16 +131,22 @@ def sample(model, sample_batch_size=5):
 def single_step_denoising(model, sample_batch_size=5):
     device = torch.device("cuda")
     # First, sample to get x tilde
-    x_tilde = sample(model, sample_batch_size=sample_batch_size)
+    x_tildes = sample(model, sample_batch_size=sample_batch_size) # [B, 3, 32, 32]
+    x_tildes = torch.split(x_tildes, 64) #
 
     # Log PDF:
-    logits = model(x_tilde).detach()  # logits don't require gradient
-    xt_v = Variable(x_tilde, requires_grad=True).to(device)
-    log_pdf = mix_logistic_loss(xt_v, logits, likelihood=True)
+    x_bar, xt_acc = [], []
+    for x_tilde in x_tildes:
+        logits = model(x_tilde).detach()  # logits don't require gradient
+        xt_v = Variable(x_tilde, requires_grad=True).to(device)
+        log_pdf = mix_logistic_loss(xt_v, logits, likelihood=True)
 
-    nabla = autograd.grad(log_pdf.sum(), xt_v, create_graph=True)[0]
-    x = x_tilde + noise**2 * nabla
-    return x, x_tilde
+        nabla = autograd.grad(log_pdf.sum(), xt_v, create_graph=True)[0]
+        x = x_tilde + noise**2 * nabla
+        x_bar.append(x)
+        xt_acc.append(x_tilde)
+    
+    return torch.concat(x_bar, dim=0), torch.concat(xt_acc, dim=0)
 
 
 def train():

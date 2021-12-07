@@ -1,3 +1,4 @@
+import time
 import torch
 from torch import nn
 from torch.autograd import Variable
@@ -10,7 +11,7 @@ import numpy as np
 from scipy.stats import entropy
 
 from model import PixelCNN
-from main import single_step_denoising, rescaling_inv
+from main import single_step_denoising, rescaling_inv, sample
 from utils import load_part_of_model
 
 torch.manual_seed(1)
@@ -98,8 +99,14 @@ def compute_model_inception_score(model_path: str, sample_batch_size=100, batch_
 
     # sample images
     print("Single-step denoising from model...")
-    x_bar, _ = single_step_denoising(model, sample_batch_size=sample_batch_size)
+    ssd_start = time.time()
+    # x_bar, _ = single_step_denoising(model, sample_batch_size=sample_batch_size)
+    x_bar = sample(model, sample_batch_size=sample_batch_size)
+    ssd_end = time.time()
+    print(f"Time for SSD: {ssd_end - ssd_start}")
+
     x_bar = rescaling_inv(x_bar)  # [B, 3, 32, 32]
+    print("x_bar", x_bar.shape)
     assert x_bar.max() <= 1 and x_bar.min() >= 0
 
     print("Computing inception score...")
@@ -109,8 +116,13 @@ def compute_model_inception_score(model_path: str, sample_batch_size=100, batch_
 
 
 if __name__ == '__main__':
+    start = time.time()
     compute_model_inception_score(
-        "models/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_214.pth",
-        sample_batch_size=1000,
+        # "models/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
+        "../../pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth",
+        sample_batch_size=64*2,
         batch_size=64
     )
+    end = time.time()
+    total_t = end - start
+    print(f"Time spent: {total_t}")
