@@ -27,7 +27,7 @@ def parser():
                         default='cifar', help='Can be either cifar|mnist')
     parser.add_argument('-p', '--print_every', type=int, default=50,
                         help='how many iterations between print statements')
-    parser.add_argument('-t', '--save_interval', type=int, default=1, # Original: 10
+    parser.add_argument('-t', '--save_interval', type=int, default=10, # Original: 10
                         help='Every how many epochs to write checkpoint/samples?')
     parser.add_argument('-r', '--load_params', type=str, default=None,
                         help='Restore training from previous model checkpoint?')
@@ -245,6 +245,6 @@ def run_sampling():
     # tutils.save_image(samples, "baseline_samples.png", nrow=1, ncol=5, padding=1)
 
 if __name__ == "__main__":
-    # train()
+    train()
     # run_single_step_denoising()
-    run_sampling()
+    # run_sampling()
