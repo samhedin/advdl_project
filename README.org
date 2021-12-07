@@ -7,7 +7,7 @@ In this project, we are going to reproduce some part of the results from the pap
 *Dec 7, 2021*
 Rewrite our rescaling ops
 - Experiment 1 [running]: =lr = 0.0002=, epoch 250 epochs
-- Experiment 2: =lr = 0.002=, initialize the weights from scratch [job id: 486602]
+- Experiment 2: =lr = 0.002=, initialize the weights from scratch [job id: 486604]
 - Experiment 3: 
   a) Initialize model with the original weights from PixelCNN++ and train for 100 epochs on clean data [job id: 486598]
   b) Initialize model with the original weights from PixelCNN++ and train for 100 epochs on *smooth* data and do SSD [job id: 486601]

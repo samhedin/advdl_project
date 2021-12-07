@@ -33,7 +33,6 @@ def log_prob_from_logits(x):
 
 def discretized_mix_logistic_loss(x, l):
     """ log-likelihood for mixture of discretized logistics, assumes the data has been rescaled to [-1,1] interval """
-    assert (x.max() <= 1) and (x.min() >= -1)
     # Pytorch ordering
     x = x.permute(0, 2, 3, 1)
     l = l.permute(0, 2, 3, 1)
