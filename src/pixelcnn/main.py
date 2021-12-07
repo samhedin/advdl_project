@@ -112,10 +112,13 @@ if args.load_params:
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=1, gamma=args.lr_decay)
 
-def sample(model):
+def sample(model, sample_batch_size=5):
     model.train(False)
     data = torch.zeros(sample_batch_size, obs[0], obs[1], obs[2])
     data = data.cuda()
+
+    sample_op = lambda x : sample_from_discretized_mix_logistic(x, 10)
+
     for i in range(obs[1]):
         for j in range(obs[2]):
             with torch.no_grad():
@@ -125,10 +128,10 @@ def sample(model):
                 data[:, :, i, j] = out_sample.data[:, :, i, j]
     return data
 
-def single_step_denoising(model):
+def single_step_denoising(model, sample_batch_size=5):
     device = torch.device("cuda")
     # First, sample to get x tilde
-    x_tilde = sample(model)
+    x_tilde = sample(model, sample_batch_size=sample_batch_size)
 
     # Log PDF:
     logits = model(x_tilde).detach()  # logits don't require gradient
