@@ -119,7 +119,8 @@ if __name__ == '__main__':
     start = time.time()
     compute_model_inception_score(
         # "models/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
-        "../../pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth",
+        # "../../pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth",
+        "models/exp3a/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_0.pth",
         sample_batch_size=64*2,
         batch_size=64
     )
