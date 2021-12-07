@@ -55,7 +55,7 @@ np.random.seed(args.seed)
 # assert not os.path.exists(os.path.join('runs', model_name)), '{} already exists!'.format(model_name)
 # writer = SummaryWriter(log_dir=os.path.join('runs', model_name))
 
-sample_batch_size = 2
+sample_batch_size = 5
 obs = (1, 28, 28) if 'mnist' in args.dataset else (3, 32, 32)
 input_channels = obs[0]
 rescaling     = lambda x : (x - .5) * 2.
@@ -213,21 +213,21 @@ def train():
         # plt.savefig("images/ssd_{}_{}.png".format(model_name, epoch))
 
 if __name__ == "__main__":
-    train()
-    # print("Single-step denoising")
-    # x, x_tilde = single_step_denoising(model)
-    # x = rescaling_inv(x)
-    # x_tilde = rescaling_inv(x_tilde)
+    # train()
+    print("Single-step denoising")
+    x, x_tilde = single_step_denoising(model)
+    x = rescaling_inv(x)
+    x_tilde = rescaling_inv(x_tilde)
 
-    # f = plt.figure()
-    # a = f.add_subplot(2, 1, 1)
-    # a.title.set_text("Before denoising")
+    f = plt.figure()
+    a = f.add_subplot(2, 1, 1)
+    a.title.set_text("Before denoising")
 
-    # grid_img = tutils.make_grid(x_tilde.cpu())
-    # plt.imshow(grid_img.permute(1, 2, 0))
+    grid_img = tutils.make_grid(x_tilde.cpu())
+    plt.imshow(grid_img.permute(1, 2, 0))
 
-    # a = f.add_subplot(2, 1, 2)
-    # a.title.set_text("After single step denoising")
-    # grid_img = tutils.make_grid(x.cpu())
-    # plt.imshow(grid_img.permute(1, 2, 0))
-    # plt.savefig("images/ssd_{}_{}.png".format(model_name, "after_5"))
+    a = f.add_subplot(2, 1, 2)
+    a.title.set_text("After single step denoising")
+    grid_img = tutils.make_grid(x.cpu())
+    plt.imshow(grid_img.permute(1, 2, 0))
+    plt.savefig("images/ssd_{}_{}.png".format(model_name, "after_9"))

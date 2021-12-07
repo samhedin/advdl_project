@@ -1,40 +1,55 @@
-import pdb;
+import pdb
+import numpy as np
+import matplotlib.pyplot as plt
+
 import torch
-from torch.autograd import Variable
-from model import PixelCNN
-from utils import sample_from_discretized_mix_logistic
+import torchvision.datasets as datasets
+import torchvision.transforms as pth_transforms
+import torchvision.transforms.functional as F
+import torchvision.utils as pth_utils
 
-sample_batch_size = 1
-obs = (3, 32, 32)
-sample_op = lambda x : sample_from_discretized_mix_logistic(x, 10)
-rescaling     = lambda x : (x - .5) * 2.
-rescaling_inv = lambda x : .5 * x  + .5
+their_rescaling = lambda x: (x - 0.5) * 2.0
+our_rescaling = lambda x: 2 * (x - x.min()) / (x.max() - x.min()) - 1
 
-def sample(model):
-    model.train(False)
-    data = torch.zeros(sample_batch_size, obs[0], obs[1], obs[2])
-    data = data.cuda()
-    for i in range(obs[1]):
-        for j in range(obs[2]):
-            with torch.no_grad():
-                data_v = Variable(data)
-                out   = model(data_v, sample=True) # [B, 100, 32, 32]
-                out_sample = sample_op(out) # [B, 3, 32, 32]
-                data[:, :, i, j] = out_sample.data[:, :, i, j]
-    return data
+rescaling_inv = lambda x: 0.5 * x + 0.5
+
+def smooth(img):
+    img = img + torch.rand_like(img) * 0.3
+    return our_rescaling(img)
+
+def show(imgs, filename=None):
+    if not isinstance(imgs, list):
+        imgs = [imgs]
+    fix, axs = plt.subplots(ncols=len(imgs), nrows=1, squeeze=False)
+    for i, img in enumerate(imgs):
+        img = img.detach()
+        img = F.to_pil_image(img)
+        axs[0, i].imshow(np.asarray(img))
+        axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+    
+    if filename:
+        plt.savefig(filename, bbox_inches="tight")
+
 
 def main():
-    print("Loading model from checkpoint...")
-    device = torch.device("cuda")
-    model = PixelCNN(nr_resnet=5, nr_filters=160, input_channels=3, nr_logistic_mix=10)
-    ckpt = torch.load("models/pcnn_lr:0.00020_nr-resnet5_nr-filters160_2.pth", map_location="cpu")
-    model.load_state_dict(ckpt)
-    model.to(device)
-    model.eval()
+    print("Setting up data loader")
+    transforms = pth_transforms.Compose([pth_transforms.ToTensor(), smooth])
+    train_loader = torch.utils.data.DataLoader(
+        datasets.CIFAR10("./data", train=True, download=True, transform=transforms),
+        batch_size=5,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
+        drop_last=True,
+    )
 
-    print("Sampling...")
-    sample_t = sample(model)
-    sample_t = rescaling_inv(sample_t)   
+    for (img, _) in train_loader:
+        # img = img + torch.randn_like(img) * 0.3
+        grid = pth_utils.make_grid(img, nrow=1, padding=1)
+        print(grid.shape)
+        show(grid, "./our_noise.png")
+        break
+
 
 if __name__ == "__main__":
     main()
