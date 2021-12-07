@@ -13,6 +13,10 @@ from model import PixelCNN
 from main import single_step_denoising, rescaling_inv
 from utils import load_part_of_model
 
+torch.manual_seed(1)
+np.random.seed(1)
+
+
 class IgnoreLabelDataset(torch.utils.data.Dataset):
         def __init__(self, orig):
             self.orig = orig
@@ -83,7 +87,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     return np.mean(split_scores), np.std(split_scores)
 
 
-def compute_model_inception_score(model_path: str):
+def compute_model_inception_score(model_path: str, sample_batch_size=100, batch_size=64):
     device = torch.device("cuda")
     # load model
     print(f"Loading the model from {model_path}")
@@ -94,40 +98,19 @@ def compute_model_inception_score(model_path: str):
 
     # sample images
     print("Single-step denoising from model...")
-    x_bar, _ = single_step_denoising(model, sample_batch_size=5)
+    x_bar, _ = single_step_denoising(model, sample_batch_size=sample_batch_size)
     x_bar = rescaling_inv(x_bar)  # [B, 3, 32, 32]
     assert x_bar.max() <= 1 and x_bar.min() >= 0
 
     print("Computing inception score...")
     img_dataset = IgnoreLabelDataset(torch.utils.data.TensorDataset(x_bar))
-    is_mean, is_std = inception_score(img_dataset, cuda=True, batch_size=1, resize=True)
+    is_mean, is_std = inception_score(img_dataset, cuda=True, batch_size=batch_size, resize=True)
     print(is_mean, is_std)
 
 
 if __name__ == '__main__':
-    compute_model_inception_score("models/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_214.pth")
-    # class IgnoreLabelDataset(torch.utils.data.Dataset):
-    #     def __init__(self, orig):
-    #         self.orig = orig
-
-    #     def __getitem__(self, index):
-    #         return self.orig[index][0]
-
-    #     def __len__(self):
-    #         return len(self.orig)
-
-    # import torchvision.datasets as dset
-    # import torchvision.transforms as transforms
-
-    # cifar = dset.CIFAR10(root='data/', download=True,
-    #                          transform=transforms.Compose([
-    #                              transforms.Scale(32),
-    #                              transforms.ToTensor(),
-    #                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    #                          ])
-    # )
-
-    # IgnoreLabelDataset(cifar)
-
-    # print ("Calculating Inception Score...")
-    # print (inception_score(IgnoreLabelDataset(cifar), cuda=True, batch_size=32, resize=True, splits=10))
+    compute_model_inception_score(
+        "models/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_214.pth",
+        sample_batch_size=1000,
+        batch_size=64
+    )
