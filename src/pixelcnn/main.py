@@ -52,7 +52,6 @@ def parser():
     parser.add_argument('--smooth', type=bool, default=False, help="Whether to train on smoothed data")
 
     args = parser.parse_args()
-    print(args)
     return args
 
 args = parser()
@@ -256,9 +255,14 @@ def run_sampling():
     grid_img = tutils.make_grid(samples.cpu())
     plt.imshow(grid_img.permute(1, 2, 0))
     f.savefig("images/exp3b/exp3b_baseline.png", bbox_inches="tight")
-    # tutils.save_image(samples, "baseline_samples.png", nrow=1, ncol=5, padding=1)
+
+def experiment_2a():
+    print("Experiment 2a")
+    print(args)
+    train()
 
 if __name__ == "__main__":
     # train()
-    run_single_step_denoising()
+    # run_single_step_denoising()
     # run_sampling()
+    experiment_2a()

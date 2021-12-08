@@ -8,9 +8,9 @@ In this project, we are going to reproduce some part of the results from the pap
 Rewrite our rescaling ops
 Restrict the number of epochs for all experiment to 100
 - Experiment 2: focuses on the effect of smoothing
-  a/ =lr = 0.0002=, initialize the weights from scratch trained on smooth data[job id: 486604] [DONE]
+  a/ =lr = 0.0002=, initialize the weights from scratch trained on smooth data[job id: 501988]
   - After =100= epochs, we've got IS score =1.312768533148408=
-  b/ =lr = 0.0002=, initialize the weights from scratch trained on clean data [job id: 501983]
+  b/ =lr = 0.0002=, initialize the weights from scratch trained on clean data [job id: 501986]
 
 - Experiment 3: focuses on the effect of using pretrained PixelCNN++ clean data
   a) Initialize model with the original weights from PixelCNN++ and train for 100 epochs on clean data [job id: 486598]
@@ -74,3 +74,6 @@ $\nabla_{\tilde x} \log(p_\theta(\tilde x))$
 2. Sample from stage 1. This returns smooth images with distribution $p(\tilde x)$, and save the images.
 3. Train stage 2. This takes as input smooth images, and is trained to map those to regular images.
 4. To get the final output of the network(s). Sample from stage 1 to produce a smooth image. Give that image to stage 2, and stage 2 will denoise that smooth image to produce a regular image.
+
+*Day dreaming*
+- We have an experiment coded =ssd1000= that does Stage-1 training and evaluated with SSD running on the cluster with job id =501989=
