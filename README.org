@@ -8,9 +8,9 @@ In this project, we are going to reproduce some part of the results from the pap
 Rewrite our rescaling ops
 Restrict the number of epochs for all experiment to 100
 - Experiment 2: focuses on the effect of smoothing
-  a/ =lr = 0.0002=, initialize the weights from scratch trained on smooth data[job id: 501988]
+  a/ =lr = 0.0002=, initialize the weights from scratch trained on smooth data[job id: 502002]
   - After =100= epochs, we've got IS score =1.312768533148408=
-  b/ =lr = 0.0002=, initialize the weights from scratch trained on clean data [job id: 501986]
+  b/ =lr = 0.0002=, initialize the weights from scratch trained on clean data [job id: 502003]
 
 - Experiment 3: focuses on the effect of using pretrained PixelCNN++ clean data
   a) Initialize model with the original weights from PixelCNN++ and train for 100 epochs on clean data [job id: 486598]

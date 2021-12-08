@@ -27,7 +27,7 @@ def parser():
                         default='cifar', help='Can be either cifar|mnist')
     parser.add_argument('-p', '--print_every', type=int, default=50,
                         help='how many iterations between print statements')
-    parser.add_argument('-t', '--save_interval', type=int, default=10, # Original: 10
+    parser.add_argument('-t', '--save_interval', type=int, default=5, # Original: 10
                         help='Every how many epochs to write checkpoint/samples?')
     parser.add_argument('-r', '--load_params', type=str, default=None,
                         help='Restore training from previous model checkpoint?')
@@ -67,7 +67,7 @@ if args.exp_name:
     img_dir = Path("images") / args.exp_name
     img_dir.mkdir(parents=True, exist_ok=True)
 
-sample_batch_size = 64
+sample_batch_size = 5
 obs = (1, 28, 28) if 'mnist' in args.dataset else (3, 32, 32)
 input_channels = obs[0]
 rescaling     = lambda x : (x - .5) * 2.
@@ -141,6 +141,10 @@ def sample(model, sample_batch_size=5):
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
         out_data.append(data)
+
+    if len(out_data) == 1:
+        return out_data[0]
+
     return torch.concat(out_data)
 
 
@@ -253,12 +257,12 @@ def run_sampling():
     f.savefig("images/exp3b/exp3b_baseline.png", bbox_inches="tight")
 
 def experiment_2a():
-    print("Experiment 2a")
+    print("Experiment 2b")
     print(args)
     train()
 
 if __name__ == "__main__":
-    train()
+    # train()
     # run_single_step_denoising()
     # run_sampling()
-    # experiment_2a()
+    experiment_2a()
