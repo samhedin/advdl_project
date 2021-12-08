@@ -110,7 +110,8 @@ if args.load_params:
     params = torch.load(args.load_params)
     added = 0
     for name, param in params.items():
-        name = '.'.join(name.split('.')[1:])
+        # name = '.'.join(name.split('.')[1:])
+        name = name.replace("module.", "")
         if name in model.state_dict().keys():
             model.state_dict()[name].copy_(param)
             added += 1
@@ -121,23 +122,31 @@ if args.load_params:
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=1, gamma=args.lr_decay)
 
+
 def sample(model, sample_batch_size=5):
     model.train(False)
-    data = torch.zeros(sample_batch_size, obs[0], obs[1], obs[2])
-    data = data.cuda()
+
+    num_batches = sample_batch_size // 64
 
     sample_op = lambda x : sample_from_discretized_mix_logistic(x, 10)
 
-    for i in range(obs[1]):
-        for j in range(obs[2]):
-            with torch.no_grad():
-                data_v = Variable(data)
-                out   = model(data_v, sample=True)  # model.forward(data_v, sample=True)
-                out_sample = sample_op(out)
-                data[:, :, i, j] = out_sample.data[:, :, i, j]
-    return data
+    out_data = []
+    for _ in range(num_batches):
+        data = torch.zeros(64, obs[0], obs[1], obs[2])
+        data = data.cuda()
+        for i in range(obs[1]):
+            for j in range(obs[2]):
+                with torch.no_grad():
+                    data_v = Variable(data).cuda()
+                    out   = model(data_v, sample=True)  # model.forward(data_v, sample=True)
+                    out_sample = sample_op(out)
+                    data[:, :, i, j] = out_sample.data[:, :, i, j]
+        out_data.append(data)
+    return torch.concat(out_data)
+
 
 def single_step_denoising(model, sample_batch_size=5):
+    model.cuda()
     device = torch.device("cuda")
     # First, sample to get x tilde
     x_tildes = sample(model, sample_batch_size=sample_batch_size) # [B, 3, 32, 32]
@@ -146,6 +155,7 @@ def single_step_denoising(model, sample_batch_size=5):
     # Log PDF:
     x_bar, xt_acc = [], []
     for x_tilde in x_tildes:
+        x_tilde = x_tilde.cuda()
         logits = model(x_tilde).detach()  # logits don't require gradient
         xt_v = Variable(x_tilde, requires_grad=True).to(device)
         log_pdf = mix_logistic_loss(xt_v, logits, likelihood=True)
@@ -222,17 +232,21 @@ def run_single_step_denoising():
     x_tilde = rescaling_inv(x_tilde)
 
     f = plt.figure()
-    a = f.add_subplot(2, 1, 1)
-    a.title.set_text("Before denoising")
-
-    grid_img = tutils.make_grid(x_tilde.cpu())
-    plt.imshow(grid_img.permute(1, 2, 0))
-
-    a = f.add_subplot(2, 1, 2)
-    a.title.set_text("After single step denoising")
     grid_img = tutils.make_grid(x.cpu())
     plt.imshow(grid_img.permute(1, 2, 0))
-    plt.savefig("images/ssd_{}_{}.png".format(model_name, "after_9"))
+    f.savefig("images/exp3b/exp3b_ssd.png", bbox_inches="tight")
+    # f = plt.figure()
+    # a = f.add_subplot(2, 1, 1)
+    # a.title.set_text("Before denoising")
+
+    # grid_img = tutils.make_grid(x_tilde.cpu())
+    # plt.imshow(grid_img.permute(1, 2, 0))
+
+    # a = f.add_subplot(2, 1, 2)
+    # a.title.set_text("After single step denoising")
+    # grid_img = tutils.make_grid(x.cpu())
+    # plt.imshow(grid_img.permute(1, 2, 0))
+    # plt.savefig("images/ssd_{}_{}.png".format(model_name, "after_9"))
 
 def run_sampling():
     samples = sample(model)
@@ -241,10 +255,10 @@ def run_sampling():
     f = plt.figure()
     grid_img = tutils.make_grid(samples.cpu())
     plt.imshow(grid_img.permute(1, 2, 0))
-    f.savefig("images/baseline_samples_original.png", bbox_inches="tight")
+    f.savefig("images/exp3b/exp3b_baseline.png", bbox_inches="tight")
     # tutils.save_image(samples, "baseline_samples.png", nrow=1, ncol=5, padding=1)
 
 if __name__ == "__main__":
-    train()
-    # run_single_step_denoising()
+    # train()
+    run_single_step_denoising()
     # run_sampling()

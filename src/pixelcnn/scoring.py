@@ -88,7 +88,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     return np.mean(split_scores), np.std(split_scores)
 
 
-def compute_model_inception_score(model_path: str, sample_batch_size=100, batch_size=64):
+def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_size=64):
     device = torch.device("cuda")
     # load model
     print(f"Loading the model from {model_path}")
@@ -100,14 +100,13 @@ def compute_model_inception_score(model_path: str, sample_batch_size=100, batch_
     # sample images
     print("Single-step denoising from model...")
     ssd_start = time.time()
-    # x_bar, _ = single_step_denoising(model, sample_batch_size=sample_batch_size)
-    x_bar = sample(model, sample_batch_size=sample_batch_size)
+    x_bar, _ = single_step_denoising(model, sample_batch_size=sample_batch_size)
+    # x_bar = sample(model, sample_batch_size=sample_batch_size)
     ssd_end = time.time()
     print(f"Time for SSD: {ssd_end - ssd_start}")
 
     x_bar = rescaling_inv(x_bar)  # [B, 3, 32, 32]
     print("x_bar", x_bar.shape)
-    assert x_bar.max() <= 1 and x_bar.min() >= 0
 
     print("Computing inception score...")
     img_dataset = IgnoreLabelDataset(torch.utils.data.TensorDataset(x_bar))
@@ -116,14 +115,15 @@ def compute_model_inception_score(model_path: str, sample_batch_size=100, batch_
 
 
 if __name__ == '__main__':
+    cfg = {
+        "model_path": "models/exp3b/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
+        "sample_batch_size": 64 * 2,
+        "batch_size": 64
+    }
+    print("Computing Inception score with settings...")
+    print(cfg)
     start = time.time()
-    compute_model_inception_score(
-        # "models/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
-        # "../../pretrained/pixel-cnn-pp/pcnn_lr.0.00040_nr-resnet5_nr-filters160_889.pth",
-        "models/exp3a/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_0.pth",
-        sample_batch_size=64*2,
-        batch_size=64
-    )
+    compute_model_inception_score(**cfg)
     end = time.time()
     total_t = end - start
     print(f"Time spent: {total_t}")

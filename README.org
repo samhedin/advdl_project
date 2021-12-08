@@ -6,11 +6,22 @@ In this project, we are going to reproduce some part of the results from the pap
 * TODO
 *Dec 7, 2021*
 Rewrite our rescaling ops
-- Experiment 1 [running]: =lr = 0.0002=, epoch 250 epochs
-- Experiment 2: =lr = 0.002=, initialize the weights from scratch [job id: 486604]
-- Experiment 3: 
+Restrict the number of epochs for all experiment to 100
+- Experiment 1: focuses on learning rate =lr = 0.0002=, epoch 100 epochs
+ a/ =lr = 0.0002=
+ b/ =lr = 0.002=
+ c/ =lr = 0.02=
+- Experiment 2: focuses on the effect of smoothing
+  a/ =lr = 0.002=, initialize the weights from scratch trained on smooth data[job id: 486604] [DONE]
+  - After =100= epochs, we've got IS score =1.312768533148408=
+  b/ =lr = 0.002=, initialize the weights from scratch trained on clean data
+
+- Experiment 3: focuses on the effect of using pretrained PixelCNN++ clean data
   a) Initialize model with the original weights from PixelCNN++ and train for 100 epochs on clean data [job id: 486598]
+  - Generate 5 samples from this model =exp3a_baseline.png=
+  - Score this model without SSD
   b) Initialize model with the original weights from PixelCNN++ and train for 100 epochs on *smooth* data and do SSD [job id: 486601]
+  - Score this model with SSD
 
 - We're investigating the differences in Inception score when doing SSD between model trained after 100 and 260 epochs.
 - Next, we're gonna compute the IS on single-step denoising on the original pixelcnn++ model
