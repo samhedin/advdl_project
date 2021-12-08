@@ -67,7 +67,7 @@ if args.exp_name:
     img_dir = Path("images") / args.exp_name
     img_dir.mkdir(parents=True, exist_ok=True)
 
-sample_batch_size = 5
+sample_batch_size = 64
 obs = (1, 28, 28) if 'mnist' in args.dataset else (3, 32, 32)
 input_channels = obs[0]
 rescaling     = lambda x : (x - .5) * 2.
@@ -125,7 +125,7 @@ scheduler = lr_scheduler.StepLR(optimizer, step_size=1, gamma=args.lr_decay)
 def sample(model, sample_batch_size=5):
     model.train(False)
 
-    num_batches = sample_batch_size // 64
+    num_batches = sample_batch_size // 64 if sample_batch_size > 64 else 1
 
     sample_op = lambda x : sample_from_discretized_mix_logistic(x, 10)
 
@@ -230,29 +230,25 @@ def run_single_step_denoising():
     x = rescaling_inv(x)
     x_tilde = rescaling_inv(x_tilde)
 
+    nrow = 1
+    if (sample_batch_size // 8) > 1:
+        nrow = sample_batch_size // 8
     f = plt.figure()
-    grid_img = tutils.make_grid(x.cpu())
+    grid_img = tutils.make_grid(x.cpu(), nrow=nrow, padding=0)
+    plt.axis("off")
     plt.imshow(grid_img.permute(1, 2, 0))
     f.savefig("images/exp3b/exp3b_ssd.png", bbox_inches="tight")
-    # f = plt.figure()
-    # a = f.add_subplot(2, 1, 1)
-    # a.title.set_text("Before denoising")
-
-    # grid_img = tutils.make_grid(x_tilde.cpu())
-    # plt.imshow(grid_img.permute(1, 2, 0))
-
-    # a = f.add_subplot(2, 1, 2)
-    # a.title.set_text("After single step denoising")
-    # grid_img = tutils.make_grid(x.cpu())
-    # plt.imshow(grid_img.permute(1, 2, 0))
-    # plt.savefig("images/ssd_{}_{}.png".format(model_name, "after_9"))
 
 def run_sampling():
     samples = sample(model)
     samples = rescaling_inv(samples)
 
+    nrow = 1
+    if (sample_batch_size // 8) > 1:
+        nrow = sample_batch_size // 8
     f = plt.figure()
-    grid_img = tutils.make_grid(samples.cpu())
+    grid_img = tutils.make_grid(samples.cpu(), nrow=8, padding=0)
+    plt.axis("off")
     plt.imshow(grid_img.permute(1, 2, 0))
     f.savefig("images/exp3b/exp3b_baseline.png", bbox_inches="tight")
 
@@ -262,7 +258,7 @@ def experiment_2a():
     train()
 
 if __name__ == "__main__":
-    # train()
+    train()
     # run_single_step_denoising()
     # run_sampling()
-    experiment_2a()
+    # experiment_2a()
