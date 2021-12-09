@@ -76,4 +76,4 @@ $\nabla_{\tilde x} \log(p_\theta(\tilde x))$
 4. To get the final output of the network(s). Sample from stage 1 to produce a smooth image. Give that image to stage 2, and stage 2 will denoise that smooth image to produce a regular image.
 
 *Day dreaming*
-- We have an experiment coded =ssd1000= that does Stage-1 training and evaluated with SSD running on the cluster with job id =501989=
+- We have an experiment coded =ssd1000= that does Stage-1 training and evaluated with SSD running on the cluster with job id =501989=, continued from epoch =10= with job id =502145=

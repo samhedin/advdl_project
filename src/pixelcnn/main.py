@@ -27,7 +27,7 @@ def parser():
                         default='cifar', help='Can be either cifar|mnist')
     parser.add_argument('-p', '--print_every', type=int, default=50,
                         help='how many iterations between print statements')
-    parser.add_argument('-t', '--save_interval', type=int, default=5, # Original: 10
+    parser.add_argument('-t', '--save_interval', type=int, default=10, # Original: 10
                         help='Every how many epochs to write checkpoint/samples?')
     parser.add_argument('-r', '--load_params', type=str, default=None,
                         help='Restore training from previous model checkpoint?')
@@ -50,6 +50,7 @@ def parser():
                         help='Random seed to use')
     parser.add_argument('--exp_name', type=str, help="Name of the experiment")
     parser.add_argument('--smooth', type=bool, default=False, help="Whether to train on smoothed data")
+    parser.add_argument('--resume_from', type=int, default=None, help="Epoch to resume training from")
 
     args = parser.parse_args()
     return args
@@ -131,7 +132,8 @@ def sample(model, sample_batch_size=5):
 
     out_data = []
     for _ in range(num_batches):
-        data = torch.zeros(64, obs[0], obs[1], obs[2])
+        batch_size = 64 if num_batches > 1 else sample_batch_size
+        data = torch.zeros(batch_size, obs[0], obs[1], obs[2])
         data = data.cuda()
         for i in range(obs[1]):
             for j in range(obs[2]):
@@ -174,6 +176,8 @@ def train():
     print('starting training')
     writes = 0
     for epoch in range(args.max_epochs):
+        if args.resume_from:
+            epoch += args.resume_from
         model.train(True)
         torch.cuda.synchronize()
         train_loss = 0.
@@ -192,7 +196,8 @@ def train():
             train_loss += loss.item()
             if (batch_idx +1) % args.print_every == 0 : 
                 deno = args.print_every * args.batch_size * np.prod(obs) * np.log(2.)
-                print('loss : {:.4f}, time : {:.4f}'.format(
+                print('Epoch: {} - loss : {:.4f}, time : {:.4f}'.format(
+                    epoch,
                     (train_loss / deno), 
                     (time.time() - time_)))
                 train_loss = 0.
@@ -216,7 +221,7 @@ def train():
             del loss, output
 
         deno = batch_idx * args.batch_size * np.prod(obs) * np.log(2.)
-        print('test loss : %s' % (test_loss / deno))
+        print("Epoch: {} - test loss : {}".format(epoch, test_loss / deno))
         
         if (epoch + 1) % args.save_interval == 0:
             ckpt_path = os.path.join(model_dir, '{}_{}.pth'.format(model_name, epoch))
@@ -226,7 +231,8 @@ def train():
             sample_t = rescaling_inv(sample_t)
 
             img_path = os.path.join(img_dir, '{}_{}.png'.format(model_name, epoch))
-            tutils.save_image(sample_t, img_path, nrow=5, padding=0)
+            nrow = 1 if sample_batch_size <= 8 else sample_batch_size // 8
+            tutils.save_image(sample_t, img_path, nrow=nrow, padding=0)
 
 def run_single_step_denoising():
     print("Single-step denoising")
@@ -257,7 +263,7 @@ def run_sampling():
     f.savefig("images/exp3b/exp3b_baseline.png", bbox_inches="tight")
 
 def experiment_2a():
-    print("Experiment 2b")
+    print("Experiment SSD1000")
     print(args)
     train()
 
