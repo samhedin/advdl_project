@@ -68,7 +68,7 @@ if args.exp_name:
     img_dir = Path("images") / args.exp_name
     img_dir.mkdir(parents=True, exist_ok=True)
 
-sample_batch_size = 5
+sample_batch_size = 64
 obs = (1, 28, 28) if 'mnist' in args.dataset else (3, 32, 32)
 input_channels = obs[0]
 rescaling     = lambda x : (x - .5) * 2.
@@ -77,13 +77,6 @@ kwargs = {'num_workers':4, 'pin_memory':True, 'drop_last':True}
 noise = 0.3
 
 model_name = 'pcnn_lr:{:.5f}_nr-resnet{}_nr-filters{}_noise-{}'.format(args.lr, args.nr_resnet, args.nr_filters, str(noise).replace(".", ""))
-
-
-# def smooth(image):
-#     """Smooth input image by adding gaussian noise and rescale its values betwen [-1, 1]"""
-#     image = image + torch.randn_like(image) * noise
-#     image = 2 * (image - image.min()) / (image.max() - image.min()) - 1
-#     return image
 
 # Recale the image to range [-1, 1]
 ds_transforms = transforms.Compose([
@@ -110,7 +103,6 @@ if args.load_params:
     params = torch.load(args.load_params)
     added = 0
     for name, param in params.items():
-        # name = '.'.join(name.split('.')[1:])
         name = name.replace("module.", "")
         if name in model.state_dict().keys():
             model.state_dict()[name].copy_(param)
@@ -126,7 +118,7 @@ scheduler = lr_scheduler.StepLR(optimizer, step_size=1, gamma=args.lr_decay)
 def sample(model, sample_batch_size=5):
     model.train(False)
 
-    num_batches = sample_batch_size // 64 if sample_batch_size > 64 else 1
+    num_batches = sample_batch_size // 64 if sample_batch_size >= 64 else 1
 
     sample_op = lambda x : sample_from_discretized_mix_logistic(x, 10)
 
@@ -236,7 +228,7 @@ def train():
 
 def run_single_step_denoising():
     print("Single-step denoising")
-    x, x_tilde = single_step_denoising(model)
+    x, x_tilde = single_step_denoising(model, sample_batch_size=sample_batch_size)
     x = rescaling_inv(x)
     x_tilde = rescaling_inv(x_tilde)
 
@@ -247,28 +239,28 @@ def run_single_step_denoising():
     grid_img = tutils.make_grid(x.cpu(), nrow=nrow, padding=0)
     plt.axis("off")
     plt.imshow(grid_img.permute(1, 2, 0))
-    f.savefig("images/exp3b/exp3b_ssd.png", bbox_inches="tight")
+    f.savefig("images/exp2a/exp2a_ssd.png", bbox_inches="tight")
 
 def run_sampling():
-    samples = sample(model)
+    samples = sample(model, sample_batch_size=sample_batch_size)
     samples = rescaling_inv(samples)
 
     nrow = 1
     if (sample_batch_size // 8) > 1:
         nrow = sample_batch_size // 8
     f = plt.figure()
-    grid_img = tutils.make_grid(samples.cpu(), nrow=8, padding=0)
+    grid_img = tutils.make_grid(samples.cpu(), nrow=nrow, padding=0)
     plt.axis("off")
     plt.imshow(grid_img.permute(1, 2, 0))
-    f.savefig("images/exp3b/exp3b_baseline.png", bbox_inches="tight")
+    f.savefig("images/exp2b/exp2b_baseline.png", bbox_inches="tight")
 
 def experiment_2a():
-    print("Experiment SSD1000")
+    print("Experiment 2a")
     print(args)
     train()
 
 if __name__ == "__main__":
     # train()
-    # run_single_step_denoising()
+    run_single_step_denoising()
     # run_sampling()
-    experiment_2a()
+    # experiment_2a()
