@@ -16,5 +16,5 @@ pwd
 conda activate /proj/attention-cpu/users/x_cuoda/.conda/advdl
 
 python stage1.py --exp_name "gen_stage1_for_stage2" \
-    --smooth 1
+    --smooth 1 \
     -r models/exp2a/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth
