@@ -88,7 +88,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     return np.mean(split_scores), np.std(split_scores)
 
 
-def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_size=64):
+def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_size=64, splits=10):
     device = torch.device("cuda")
     # load model
     print(f"Loading the model from {model_path}")
@@ -100,8 +100,8 @@ def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_
     # sample images
     print("Single-step denoising from model...")
     ssd_start = time.time()
-    x_bar, _ = single_step_denoising(model, sample_batch_size=sample_batch_size)
-    # x_bar = sample(model, sample_batch_size=sample_batch_size)
+    # x_bar, _ = single_step_denoising(model, sample_batch_size=sample_batch_size)
+    x_bar = sample(model, sample_batch_size=sample_batch_size)
     ssd_end = time.time()
     print(f"Time for SSD: {ssd_end - ssd_start}")
 
@@ -110,15 +110,16 @@ def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_
 
     print("Computing inception score...")
     img_dataset = IgnoreLabelDataset(torch.utils.data.TensorDataset(x_bar))
-    is_mean, is_std = inception_score(img_dataset, cuda=True, batch_size=batch_size, resize=True)
+    is_mean, is_std = inception_score(img_dataset, cuda=True, batch_size=batch_size, resize=True, splits=splits)
     print(is_mean, is_std)
 
 
 if __name__ == '__main__':
     cfg = {
-        "model_path": "models/exp3b/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
-        "sample_batch_size": 64 * 2,
-        "batch_size": 64
+        "model_path": "models/exp2a/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
+        "sample_batch_size": 64 * 100,
+        "batch_size": 64,
+        "splits": 10
     }
     print("Computing Inception score with settings...")
     print(cfg)
