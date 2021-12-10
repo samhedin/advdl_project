@@ -206,24 +206,32 @@ def train(model, train_loader, test_loader):
         if (epoch + 1) % args.save_interval == 0:
             ckpt_path = os.path.join(model_dir, '{}_{}.pth'.format(model_name, epoch))
             torch.save(model.state_dict(), ckpt_path)
-        #     print('sampling...')
-        #     sample_t = sample(model)
-        #     sample_t = rescaling_inv(sample_t)
-
-        #     img_path = os.path.join(img_dir, '{}_{}.png'.format(model_name, epoch))
-        #     nrow = 1 if sample_batch_size <= 8 else sample_batch_size // 8
-        #     tutils.save_image(sample_t, img_path, nrow=nrow, padding=0)
 
 
 def run_training():
+    print("Stage 2 training")
     train_loader, test_loader = build_dataloaders()
     train(model, train_loader, test_loader)
 
 
-def test_sample():
-    in_data = torch.randn(1, 3, 32, 32)
-    out_sample = sample(model, in_data)
+def run_conditional_generation(stage1_path):
+    """
+    Load images from stage 1 to generate images from stage 2
+    """
+    stage1_images = torch.load(stage1_path, map_location=device)
+    
+    stage2_images = sample(model, stage1_images)
+    torch.save(stage2_images, "images/stage2_images.pth")
+
+    # Hereafter is for visualization purpose
+    samples = rescaling_inv(stage2_images)
+    f = plt.figure()
+    grid_img = tutils.make_grid(samples.cpu(), nrow=1, padding=1)
+    plt.axis("off")
+    plt.imshow(grid_img.permute(1, 2, 0))
+    f.savefig("images/stage2_images.png", bbox_inches="tight")
+
 
 if __name__ == "__main__":
     run_training()
-    # test_sample()
+    # run_conditional_generation("images/stage1_images.pth")

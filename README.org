@@ -15,7 +15,7 @@ Restrict the number of epochs for all experiment to 100, and when we refer to th
 Rewrite our rescaling ops
 Restrict the number of epochs for all experiment to 100
 - Experiment 1: focuses on the effect of smoothing
-  a/ =lr = 0.0002=, initialize the weights from scratch trained on smooth data[job id: 502002]
+  a/ =lr = 0.0002=, initialize the weights from scratch trained on smooth data [job id: 502002]
   - After =100= epochs, we've got IS score =1.312768533148408=
   b/ =lr = 0.0002=, initialize the weights from scratch trained on clean data [job id: 502003]
 
