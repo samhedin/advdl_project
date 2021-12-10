@@ -141,7 +141,6 @@ def sample(model, sample_batch_size=5):
 
     return torch.concat(out_data)
 
-
 def single_step_denoising(model, sample_batch_size=5):
     model.cuda()
     device = torch.device("cuda")

@@ -2,19 +2,24 @@
 
 In this project, we are going to reproduce some part of the results from the paper [[Improved Autoregressive Modeling with Distribution Smoothing][https://arxiv.org/abs/2103.15089]] by Meng et al., ICLR 2021.
 
-* Conditional generation
-p(x|x')
-
 * TODO
-*Dec 7, 2021*
+*Dec 10, 2021 - Conditional generation [Stage 2]*
+Restrict the number of epochs for all experiment to 100, and when we refer to the data, it's always *smoothed*
+- Experiment 3: focuses on the effect of smoothing for conditional genration case 
+  a) =lr = 0.0002=, initialize the weights from scratch, i.e., this is =p(x|x_t)=. Then sample from =p(x|x_t)= by doing the following:
+    1. Generate =64*2 = 128= samples from =p(x_t)= and save them to a directory
+    2. Generate images from =p(x|x_t)= conditioned on the images in 1.
+    3. Compute the IS score for these images from step 2.
+
+*Dec 7, 2021 - [Stage 1]*
 Rewrite our rescaling ops
 Restrict the number of epochs for all experiment to 100
-- Experiment 2: focuses on the effect of smoothing
+- Experiment 1: focuses on the effect of smoothing
   a/ =lr = 0.0002=, initialize the weights from scratch trained on smooth data[job id: 502002]
   - After =100= epochs, we've got IS score =1.312768533148408=
   b/ =lr = 0.0002=, initialize the weights from scratch trained on clean data [job id: 502003]
 
-- Experiment 3: focuses on the effect of using pretrained PixelCNN++ clean data
+- Experiment 2: focuses on the effect of using pretrained PixelCNN++ clean data
   a) Initialize model with the original weights from PixelCNN++ and train for 100 epochs on clean data [job id: 486598]
   - Generate 5 samples from this model =exp3a_baseline.png=
   - Score this model without SSD
