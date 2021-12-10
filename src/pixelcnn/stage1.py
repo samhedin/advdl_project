@@ -259,16 +259,16 @@ def experiment_2a():
     train()
 
 def sampling_for_stage2():
-    samples = sample(model, sample_batch_size=2)
+    samples = sample(model, sample_batch_size=64*2)
     torch.save(samples, "images/stage1_images.pth")
 
-    # Hereafter is for visualization purpose
-    samples = rescaling_inv(samples)
-    f = plt.figure()
-    grid_img = tutils.make_grid(samples.cpu(), nrow=1, padding=1)
-    plt.axis("off")
-    plt.imshow(grid_img.permute(1, 2, 0))
-    f.savefig("images/stage1_images.png", bbox_inches="tight")
+    # # Hereafter is for visualization purpose
+    # samples = rescaling_inv(samples)
+    # f = plt.figure()
+    # grid_img = tutils.make_grid(samples.cpu(), nrow=1, padding=1)
+    # plt.axis("off")
+    # plt.imshow(grid_img.permute(1, 2, 0))
+    # f.savefig("images/stage1_images.png", bbox_inches="tight")
 
 if __name__ == "__main__":
     # train()
