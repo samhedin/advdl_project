@@ -100,8 +100,8 @@ def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_
     # sample images
     print("Single-step denoising from model...")
     ssd_start = time.time()
-    # x_bar, _ = single_step_denoising(model, sample_batch_size=sample_batch_size)
-    x_bar = sample(model, sample_batch_size=sample_batch_size)
+    x_bar, _ = single_step_denoising(model, sample_batch_size=sample_batch_size)
+    # x_bar = sample(model, sample_batch_size=sample_batch_size)
     ssd_end = time.time()
     print(f"Time for SSD: {ssd_end - ssd_start}")
 
@@ -116,8 +116,8 @@ def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_
 
 if __name__ == '__main__':
     cfg = {
-        "model_path": "models/exp2a/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
-        "sample_batch_size": 64 * 100,
+        "model_path": "models/ssd1000/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_349.pth",
+        "sample_batch_size": 64 * 2,
         "batch_size": 64,
         "splits": 10
     }
