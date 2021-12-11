@@ -11,7 +11,7 @@ import numpy as np
 from scipy.stats import entropy
 
 from model import PixelCNN
-from src.pixelcnn.stage1 import single_step_denoising, rescaling_inv, sample
+from stage1 import single_step_denoising, rescaling_inv, sample
 from utils import load_part_of_model
 
 torch.manual_seed(1)
