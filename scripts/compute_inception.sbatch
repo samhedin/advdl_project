@@ -4,11 +4,11 @@
 #SBATCH --time 48:00:00
 #SBATCH --mail-type FAIL
 #SBATCH --mail-user cuongdd@kth.se
-#SBATCH --error /proj/attention-cpu/users/%u/projects/advdl_project/logs/%J_slurm_inception_2a.err
-#SBATCH --output /proj/attention-cpu/users/%u/projects/advdl_project/logs/%J_slurm_inception_2a.out
+#SBATCH --error /proj/attention-cpu/users/%u/projects/advdl_project/logs/%J_slurm_inception_ssd1000.err
+#SBATCH --output /proj/attention-cpu/users/%u/projects/advdl_project/logs/%J_slurm_inception_ssd1000.out
 
 echo "Starting job ${SLURM_JOB_ID} on ${SLURMD_NODENAME}"
-echo "Computing inception score"
+echo "Computing inception score for SSD1000 Epoch 519"
 nvidia-smi
 module load Anaconda/2021.05-nsc1
 pushd /proj/attention-cpu/users/x_cuoda/projects/advdl_project/src/pixelcnn

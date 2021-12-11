@@ -116,7 +116,7 @@ def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_
 
 if __name__ == '__main__':
     cfg = {
-        "model_path": "models/ssd1000/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_349.pth",
+        "model_path": "models/ssd1000/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_519.pth",
         "sample_batch_size": 64 * 2,
         "batch_size": 64,
         "splits": 10
