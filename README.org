@@ -3,6 +3,17 @@
 In this project, we are going to reproduce some part of the results from the paper [[Improved Autoregressive Modeling with Distribution Smoothing][https://arxiv.org/abs/2103.15089]] by Meng et al., ICLR 2021.
 
 * TODO
+*Dec 12, 2021*
+- We have found a bug in training code for stage 2, i.e., instead of taking out the generated image from stage 2,
+we actually took out the noisy image from stage 1 that was stacked there for the purpose of conditional generation
+```
+output = model(x)[:, :, :x.size()[-1], :]
+```
+should have beeen
+```
+output = model(x)[:, :, x.size()[-1]:, :]
+```
+
 *Dec 11, 2021*
 - We have generated images from stage 1, which would be used for stage 2 generatation at =images/stage1_images.pth=
 

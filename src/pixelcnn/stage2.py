@@ -16,6 +16,7 @@ from torchvision import utils as tutils
 from utils import * 
 from model import * 
 import matplotlib.pyplot as plt
+from functools import partial
 
 def parser():
     parser = argparse.ArgumentParser()
@@ -76,7 +77,7 @@ input_channels = obs[0]
 rescaling     = lambda x : (x - .5) * 2.
 rescaling_inv = lambda x : .5 * x  + .5
 noise = 0.3
-clean_noise = 0.02
+clean_noise = 0.01
 
 model_name = 'pcnn_lr:{:.5f}_nr-resnet{}_nr-filters{}_noise-{}'.format(args.lr, args.nr_resnet, args.nr_filters, str(noise).replace(".", ""))
 
@@ -170,7 +171,7 @@ def train(model, train_loader, test_loader):
             clean_x = x + torch.randn_like(x) * clean_noise
             x = torch.cat([noisy_x, clean_x], dim=2)
             x = Variable(x).to(device)
-            output = model(x)[:, :, :x.size()[-1], :]  # Take one 1 image from the output
+            output = model(x)[:, :, x.size()[-1]:, :]  # Take one 1 image from the output
             loss = loss_op(clean_x, output)
             optimizer.zero_grad()
             loss.backward()
@@ -186,6 +187,7 @@ def train(model, train_loader, test_loader):
         scheduler.step()
         
         torch.cuda.synchronize()
+        sample_model = partial(model, sample=True)
         model.eval()
         test_loss = 0.
         for batch_idx, (x,_) in enumerate(test_loader):
@@ -207,6 +209,9 @@ def train(model, train_loader, test_loader):
             ckpt_path = os.path.join(model_dir, '{}_{}.pth'.format(model_name, epoch))
             torch.save(model.state_dict(), ckpt_path)
 
+            # Save some debug images
+            debug_images(sample_model, img_dir, epoch=epoch)
+        del sample_model
 
 def run_training():
     print("Stage 2 training")
@@ -231,6 +236,26 @@ def run_conditional_generation(stage1_path):
     plt.imshow(grid_img.permute(1, 2, 0))
     f.savefig("images/stage2_images.png", bbox_inches="tight")
 
+
+def debug_images(sample_model, output_path, epoch):
+    stage1_images = torch.load("images/stage1_images.pth", map_location=device)
+    x = stage1_images[:5]
+    x = torch.concat([x, x], dim=2)
+    x = x.to(device)
+
+    # Sampling from stage 2 using inverse CDF
+    for i in range(-x.shape[-1], 0, 1):
+        for j in range(x.shape[-1]):
+            samples = sample_from_discretized_mix_logistic_inverse_CDF(
+                x, model=sample_model, nr_mix=10, clamp=False, bisection_iter=20)
+            x[:, :, i, j] = samples[:, :, i, j]
+
+    img = rescaling_inv(x)[:, :, -x.shape[-1]:, :]
+    img2 = rescaling_inv(x)[:, :, :-x.shape[-1], :]
+    img_grid = tutils.make_grid(img, nrow=int(img.shape[0] ** 0.5), padding=0, pad_value=0)
+    img2_grid = tutils.make_grid(img2, nrow=int(img.shape[0] ** 0.5), padding=0, pad_value=0)
+    tutils.save_image(img_grid, os.path.join(output_path, f"img_{epoch}.png"))
+    tutils.save_image(img2_grid, os.path.join(output_path, f"img2_{epoch}.png"))
 
 if __name__ == "__main__":
     run_training()

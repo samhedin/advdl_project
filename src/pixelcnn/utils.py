@@ -305,3 +305,16 @@ def mix_logistic_loss(x, l, likelihood=False):
     log_probs = torch.sum(log_probs, dim=3) + log_prob_from_logits(logit_probs)
 
     return -torch.sum(log_sum_exp(log_probs))
+
+
+def binary_search(log_cdf, lb, ub, cdf_fun, n_iter=15):
+    with torch.no_grad():
+        for i in range(n_iter):
+            mid = (lb + ub) / 2.
+            mid_cdf_value = cdf_fun(mid)
+            right_idxes = mid_cdf_value < log_cdf
+            left_idxes = ~right_idxes
+            lb[right_idxes] = torch.min(mid[right_idxes], ub[right_idxes])
+            ub[left_idxes] = torch.max(mid[left_idxes], lb[left_idxes])
+
+    return mid
