@@ -13,6 +13,7 @@ from scipy.stats import entropy
 from model import PixelCNN
 from stage1 import single_step_denoising, rescaling_inv, sample
 from utils import load_part_of_model
+from stage2 import sample as stage2_sample
 
 torch.manual_seed(1)
 np.random.seed(1)
@@ -112,6 +113,18 @@ def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_
     img_dataset = IgnoreLabelDataset(torch.utils.data.TensorDataset(x_bar))
     is_mean, is_std = inception_score(img_dataset, cuda=True, batch_size=batch_size, resize=True, splits=splits)
     print("Incetion:", is_mean, "std:", is_std)
+
+
+def compute_inception_score_for_stage2(model_path=None, stage1_images=None):
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    model = PixelCNN(nr_resnet=5, nr_filters=160, nr_logistic_mix=10, input_channels=3)
+    load_part_of_model(model, model_path)
+    model.eval()
+    model.to(device)
+
+    stage2_images = stage2_sample(model, in_data=stage1_images)
+    
+
 
 
 if __name__ == '__main__':

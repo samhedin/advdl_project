@@ -121,36 +121,26 @@ def build_dataloaders():
 
     return train_loader, test_loader
 
-def sample(model, in_data):
-    """
-    Sample batches of image from the model
-    Args:
-        in_data: [B, 3, 32, 32]
-    """
-    model.train(False)
-    B, C, H, W = in_data.size()
-
-    batches = torch.split(in_data, 32)
-    sample_op = lambda x : sample_from_discretized_mix_logistic(x, 10)
-
+def sample(sample_model, in_data):
+    stage1_images = torch.split(in_data, 32, dim=0)
     out_data = []
-    for batch in batches:
-        data = torch.concat([batch, batch], dim=2)
-        data = data.to(device)
-        with torch.no_grad():
-            for i in range(obs[1]):
-                for j in range(obs[2]):
-                    data_v = Variable(data).cuda()
-                    out_prob = model(data_v, sample=True) # [B, 100, 64, 32]
-                    out_sample = sample_op(out_prob)
-                    data[:, :, i, j] = out_sample.data[:, :, i, j]
-            data = data[:, :, :data.shape[-1], :]
-            out_data.append(data)
+    for batch in stage1_images:
+        # Sampling from stage 2 using inverse CDF
+        x = torch.concat([batch, batch], dim=2)
+        x = x.to(device)
+        
+        for i in range(-x.shape[-1], 0, 1):
+            for j in range(x.shape[-1]):
+                samples = sample_from_discretized_mix_logistic_inverse_CDF(
+                    x, model=sample_model, nr_mix=10, clamp=False, bisection_iter=20)
+                x[:, :, i, j] = samples[:, :, i, j]
 
-    if len(out_data) == 1:
-        return out_data[0]
-
-    return torch.concat(out_data)
+        # img = rescaling_inv(x)[:, :, -batch_out.shape[-1]:, :]
+        out_img = x[:, :, -x.shape[-1]:, :]
+        out_data.append(out_img)
+    
+    out_data = torch.concat(out_data)
+    return out_data
 
 
 def train(model, train_loader, test_loader):
@@ -257,6 +247,19 @@ def debug_images(sample_model, output_path, epoch):
     tutils.save_image(img_grid, os.path.join(output_path, f"img_{epoch}.png"))
     tutils.save_image(img2_grid, os.path.join(output_path, f"img2_{epoch}.png"))
 
+def run_stage2_sampling():
+    stage1_images = torch.load("images/stage1_images.pth", map_location=device)
+    stage2_images = sample(model, stage1_images)
+    torch.save(stage2_images, "images/stage2_images_128.pth")
+
+    samples = rescaling_inv(stage2_images[:64])
+    f = plt.figure()
+    grid_img = tutils.make_grid(samples.cpu(), nrow=8, padding=0)
+    plt.axis("off")
+    plt.imshow(grid_img.permute(1, 2, 0))
+    f.savefig("images/stage2_samples.png", bbox_inches="tight")
+
 if __name__ == "__main__":
-    run_training()
+    # run_training()
     # run_conditional_generation("images/stage1_images.pth")
+    run_stage2_sampling()
