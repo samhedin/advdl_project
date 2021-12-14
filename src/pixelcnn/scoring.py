@@ -115,30 +115,39 @@ def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_
     print("Incetion:", is_mean, "std:", is_std)
 
 
-def compute_inception_score_for_stage2(model_path=None, stage1_images=None):
+def compute_inception_score_for_stage2(model_path=None, stage2_images=None, batch_size=64, splits=10):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = PixelCNN(nr_resnet=5, nr_filters=160, nr_logistic_mix=10, input_channels=3)
     load_part_of_model(model, model_path)
     model.eval()
     model.to(device)
 
-    stage2_images = stage2_sample(model, in_data=stage1_images)
-    
-
+    images = torch.load(stage2_images, map_location=device)
+    stage2_images = rescaling_inv(images)
+    img_dataset = IgnoreLabelDataset(torch.utils.data.TensorDataset(stage2_images))
+    is_mean, is_std = inception_score(img_dataset, cuda=True, batch_size=batch_size, resize=True, splits=splits)
+    print("Inception:", is_mean, "std:", is_std)
 
 
 if __name__ == '__main__':
-    for epoch in [99, 199, 299, 399, 499, 579]:
-        cfg = {
-            "model_path": f"models/ssd1000/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_{epoch}.pth",
-            "sample_batch_size": 64 * 2,
-            "batch_size": 64,
-            "splits": 10
-        }
-        print("Computing Inception score with settings...")
-        print(cfg)
-        start = time.time()
-        compute_model_inception_score(**cfg)
-        end = time.time()
-        total_t = end - start
-        print(f"Time spent: {total_t}")
+    cfg = {
+        "model_path": f"models/stage2_rerun/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
+        "stage2_images": "images/stage2_images_128.pth",
+        "batch_size": 64,
+        "splits": 1
+    }
+    compute_inception_score_for_stage2(**cfg)
+    # for epoch in [99, 199, 299, 399, 499, 579]:
+    #     cfg = {
+    #         "model_path": f"models/ssd1000/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_{epoch}.pth",
+    #         "sample_batch_size": 64 * 2,
+    #         "batch_size": 64,
+    #         "splits": 10
+    #     }
+    #     print("Computing Inception score with settings...")
+    #     print(cfg)
+    #     start = time.time()
+    #     compute_model_inception_score(**cfg)
+    #     end = time.time()
+    #     total_t = end - start
+    #     print(f"Time spent: {total_t}")

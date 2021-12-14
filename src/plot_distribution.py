@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-from torch.utils.data import dataset
-import cv2
 from matplotlib import pyplot as plt
 import numpy as np
-import torch
 import matplotlib.pyplot as plt
 import numpy as np
-from torchvision import datasets, utils as tfutils
-from dataset import build_dataset, smooth, stage2_image_loader
+from dataset import build_dataset
 from dataclasses import dataclass
 import matplotlib
 from skimage import color
@@ -17,8 +13,6 @@ class Config:
     data_root: str = "./data"
     dataset: str = "CIFAR10"
     batch_size: int = 64
-
-matplotlib.use("TkAgg")
 
 cifar10_regular, _ = build_dataset(Config(), smooth_output=False, grayscale=True)
 cifar10_smooth, _ = build_dataset(Config(), smooth_output=True, grayscale=True)

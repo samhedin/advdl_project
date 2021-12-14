@@ -15,6 +15,7 @@ from utils import *
 from model import * 
 from PIL import Image
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 def parser():
     parser = argparse.ArgumentParser()
@@ -118,15 +119,19 @@ scheduler = lr_scheduler.StepLR(optimizer, step_size=1, gamma=args.lr_decay)
 def sample(model, sample_batch_size=5):
     model.train(False)
 
-    num_batches = sample_batch_size // 64 if sample_batch_size >= 64 else 1
+    # num_batches = sample_batch_size // 64 if sample_batch_size >= 64 else 1
+    num_batches = sample_batch_size // 1500 if sample_batch_size > 1500 else 1
 
     sample_op = lambda x : sample_from_discretized_mix_logistic(x, 10)
 
     out_data = []
-    for _ in range(num_batches):
-        batch_size = 64 if num_batches > 1 else sample_batch_size
+    for bid in range(num_batches):
+        start_time = time.time()
+        # batch_size = 64 if num_batches > 1 else sample_batch_size
+        batch_size = 1500 if num_batches > 1 else sample_batch_size
         data = torch.zeros(batch_size, obs[0], obs[1], obs[2])
         data = data.cuda()
+        print(f"Batch {bid}, batch_size={batch_size}")
         for i in range(obs[1]):
             for j in range(obs[2]):
                 with torch.no_grad():
@@ -135,6 +140,9 @@ def sample(model, sample_batch_size=5):
                     out_sample = sample_op(out)
                     data[:, :, i, j] = out_sample.data[:, :, i, j]
         out_data.append(data)
+        end_time = time.time()
+        batch_time = end_time - start_time
+        print(f"Finish generating for batch {bid} / {num_batches} batches; time: {batch_time}")
 
     if len(out_data) == 1:
         return out_data[0]
@@ -259,20 +267,27 @@ def experiment_2a():
     train()
 
 def sampling_for_stage2():
-    samples = sample(model, sample_batch_size=64*2)
-    torch.save(samples, "images/stage1_images.pth")
+    print(f"Generating {5*1500} samples from stage 1 for stage 2")
+    samples = sample(model, sample_batch_size=5*1500)
+    torch.save(samples, "images/stage1_images_7.5k.pth")
 
-    # # Hereafter is for visualization purpose
-    # samples = rescaling_inv(samples)
-    # f = plt.figure()
-    # grid_img = tutils.make_grid(samples.cpu(), nrow=1, padding=1)
-    # plt.axis("off")
-    # plt.imshow(grid_img.permute(1, 2, 0))
-    # f.savefig("images/stage1_images.png", bbox_inches="tight")
+def run_ssd_for_final_report():
+    print(f"Generating {5*1500} samples from SSD for final report")
+    x_tidle = single_step_denoising(model, sample_batch_size=5*1500)
+    x_tidle = rescaling_inv(x_tidle)
+
+    torch.save(x_tidle, "images/stage1_ssd_7.5k.pth")
+
+def run_sampling_baseline_for_report():
+    print(f"Generating {5*1500} baseline samples for final report")
+    samples = sample(model, sample_batch_size=5*1500)
+    torch.save(samples, "images/stage1_baseline_7.5k.pth")
 
 if __name__ == "__main__":
     # train()
     # run_single_step_denoising()
     # run_sampling()
     # experiment_2a()
-    sampling_for_stage2()
+    # sampling_for_stage2()
+    # run_ssd_for_final_report()
+    run_sampling_baseline_for_report()
