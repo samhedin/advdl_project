@@ -132,10 +132,9 @@ def compute_inception_score_for_ssd(model_path, gen_images, batch_size=64, split
     model.to(device)
 
     x_tildes = rescaling_inv(torch.load(gen_images, map_location=device))
+    x_bar, _ = single_step_denoising(model, sampling=False, x_tildes=x_tildes)
     print("x_tildes", x_tildes.shape)
-    x_tildes = single_step_denoising(model, sampling=False, x_tildes=x_tildes)
-
-    img_dataset = IgnoreLabelDataset(torch.utils.data.TensorDataset(x_tildes))
+    img_dataset = IgnoreLabelDataset(torch.utils.data.TensorDataset(x_bar))
     is_mean, is_std = inception_score(img_dataset, cuda=True, batch_size=batch_size, resize=True, splits=splits)
     print("Inception:", is_mean, "std:", is_std)
 

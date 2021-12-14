@@ -152,6 +152,7 @@ def sample(model, sample_batch_size=5):
 def single_step_denoising(model, sample_batch_size=None, sampling=True, x_tildes=None):
     model.cuda()
     device = torch.device("cuda")
+    print("sampling", sampling)
     if sampling is True:
         # First, sample to get x tilde
         x_tildes = sample(model, sample_batch_size=sample_batch_size) # [B, 3, 32, 32]
@@ -162,6 +163,9 @@ def single_step_denoising(model, sample_batch_size=None, sampling=True, x_tildes
     # Log PDF:
     x_bar, xt_acc = [], []
     for x_tilde in x_tildes:
+        if x_tilde.shape[0] != 64:
+            print("Hacky, avoid last batch")
+            continue
         x_tilde = x_tilde.to(device)
         logits = model(x_tilde, sample=False).detach()  # logits don't require gradient
         xt_v = Variable(x_tilde, requires_grad=True).to(device)
