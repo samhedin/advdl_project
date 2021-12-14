@@ -115,6 +115,31 @@ def compute_model_inception_score(model_path=None, sample_batch_size=100, batch_
     print("Incetion:", is_mean, "std:", is_std)
 
 
+def compute_inception_score_for_stage1(gen_images, batch_size=64, splits=10):
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    x_bar = rescaling_inv(torch.load(gen_images, map_location=device))
+
+    img_dataset = IgnoreLabelDataset(torch.utils.data.TensorDataset(x_bar))
+    is_mean, is_std = inception_score(img_dataset, cuda=True, batch_size=batch_size, resize=True, splits=splits)
+    print("Inception:", is_mean, "std:", is_std)
+
+
+def compute_inception_score_for_ssd(model_path, gen_images, batch_size=64, splits=10):
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    model = PixelCNN(nr_resnet=5, nr_filters=160, nr_logistic_mix=10, input_channels=3)
+    load_part_of_model(model, model_path)
+    model.eval()
+    model.to(device)
+
+    x_tildes = rescaling_inv(torch.load(gen_images, map_location=device))
+    print("x_tildes", x_tildes.shape)
+    x_tildes = single_step_denoising(model, sampling=False, x_tildes=x_tildes)
+
+    img_dataset = IgnoreLabelDataset(torch.utils.data.TensorDataset(x_tildes))
+    is_mean, is_std = inception_score(img_dataset, cuda=True, batch_size=batch_size, resize=True, splits=splits)
+    print("Inception:", is_mean, "std:", is_std)
+
+
 def compute_inception_score_for_stage2(model_path=None, stage2_images=None, batch_size=64, splits=10):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = PixelCNN(nr_resnet=5, nr_filters=160, nr_logistic_mix=10, input_channels=3)
@@ -131,12 +156,19 @@ def compute_inception_score_for_stage2(model_path=None, stage2_images=None, batc
 
 if __name__ == '__main__':
     cfg = {
-        "model_path": f"models/stage2_rerun/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
-        "stage2_images": "images/stage2_images_128.pth",
-        "batch_size": 64,
-        "splits": 1
+        "model_path": "models/exp2a/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
+        "gen_images": "images/stage1_images_7.5k.pth"
     }
-    compute_inception_score_for_stage2(**cfg)
+    compute_inception_score_for_ssd(**cfg)
+    # cfg = {
+    #     "model_path": f"models/stage2_rerun/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_99.pth",
+    #     "stage2_images": "images/stage2_images_128.pth",
+    #     "batch_size": 64,
+    #     "splits": 1
+    # }
+    # compute_inception_score_for_stage2(**cfg)
+
+    # compute_inception_score_for_stage1("images/stage1_baseline_7.5k.pth", batch_size=64, splits=10)
     # for epoch in [99, 199, 299, 399, 499, 579]:
     #     cfg = {
     #         "model_path": f"models/ssd1000/pcnn_lr:0.00020_nr-resnet5_nr-filters160_noise-03_{epoch}.pth",

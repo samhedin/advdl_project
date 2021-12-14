@@ -149,18 +149,21 @@ def sample(model, sample_batch_size=5):
 
     return torch.concat(out_data)
 
-def single_step_denoising(model, sample_batch_size=5):
+def single_step_denoising(model, sample_batch_size=None, sampling=True, x_tildes=None):
     model.cuda()
     device = torch.device("cuda")
-    # First, sample to get x tilde
-    x_tildes = sample(model, sample_batch_size=sample_batch_size) # [B, 3, 32, 32]
+    if sampling is True:
+        # First, sample to get x tilde
+        x_tildes = sample(model, sample_batch_size=sample_batch_size) # [B, 3, 32, 32]
+    elif sampling is False and x_tildes is None:
+        raise RuntimeError("When sampling is False, x_tildes must be provided")
     x_tildes = torch.split(x_tildes, 64) #
 
     # Log PDF:
     x_bar, xt_acc = [], []
     for x_tilde in x_tildes:
-        x_tilde = x_tilde.cuda()
-        logits = model(x_tilde).detach()  # logits don't require gradient
+        x_tilde = x_tilde.to(device)
+        logits = model(x_tilde, sample=False).detach()  # logits don't require gradient
         xt_v = Variable(x_tilde, requires_grad=True).to(device)
         log_pdf = mix_logistic_loss(xt_v, logits, likelihood=True)
 

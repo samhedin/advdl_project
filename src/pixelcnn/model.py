@@ -119,7 +119,8 @@ class PixelCNN(nn.Module):
         ###      UP PASS    ###
         try:
             x = x if sample else torch.cat((x, self.init_padding), 1)
-        except RuntimeError:
+        except RuntimeError as e:
+            print(e)
             pdb.set_trace()
         u_list  = [self.u_init(x)]
         ul_list = [self.ul_init[0](x) + self.ul_init[1](x)]
